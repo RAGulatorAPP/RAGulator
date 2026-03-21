@@ -6,7 +6,7 @@ namespace RAGulator.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ChatController(MockDataService dataService) : ControllerBase
+public class ChatController(MockDataService dataService, FoundryChatService chatService) : ControllerBase
 {
     [HttpGet("history")]
     public ActionResult<List<ChatHistoryItem>> GetHistory()
@@ -21,9 +21,9 @@ public class ChatController(MockDataService dataService) : ControllerBase
     }
 
     [HttpPost("message")]
-    public ActionResult<SendMessageResponse> SendMessage([FromBody] SendMessageRequest request)
+    public async Task<ActionResult<SendMessageResponse>> SendMessage([FromBody] SendMessageRequest request)
     {
-        var response = dataService.ProcessMessage(request.Message);
+        var response = await chatService.ProcessMessageAsync(request);
         return Ok(response);
     }
 }

@@ -10,16 +10,28 @@ import './ChatPage.css'
 export default function ChatPage() {
   const navigate = useNavigate()
   const [inputValue, setInputValue] = useState('')
-  const [activeCitation, setActiveCitation] = useState(chatMessages[1]?.citations?.[0] || null)
+  const [activeCitation, setActiveCitation] = useState(null)
+  const [isTyping, setIsTyping] = useState(false)
+  
+  // Estado local para los mensajes dinámicos
+  // Empezamos con el mensaje de bienvenida simulado (Mock Data ID=1)
+  const [messages, setMessages] = useState([
+    chatMessages[0] 
+  ])
 
-  const currentMessage = chatMessages[1]
+  // Obtener el último mensaje del asistente para mostrar sus citaciones si las tiene
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant')
+  const currentMessage = lastAssistantMessage || chatMessages[1]
 
-  const renderMessageWithCitations = (text) => {
-    return text.split(/(\[\d+\])/).map((part, i) => {
+  const renderMessageWithCitations = (messageObj) => {
+    if (!messageObj.content) return null
+    if (!messageObj.citations || messageObj.citations.length === 0) return <span>{messageObj.content}</span>
+
+    return messageObj.content.split(/(\[\d+\])/).map((part, i) => {
       const match = part.match(/\[(\d+)\]/)
       if (match) {
         const citNum = parseInt(match[1])
-        const citation = currentMessage.citations.find(c => c.id === citNum)
+        const citation = messageObj.citations.find(c => c.id === citNum)
         return (
           <sup
             key={i}
@@ -32,6 +44,54 @@ export default function ChatPage() {
       }
       return <span key={i}>{part}</span>
     })
+  }
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return
+
+    const userText = inputValue
+    setInputValue('')
+    
+    // Add user message to UI immediately
+    const newUserMsg = { id: Date.now(), role: 'user', content: userText }
+    setMessages(prev => [...prev, newUserMsg])
+    setIsTyping(true)
+
+    try {
+      const response = await fetch('http://localhost:5165/api/chat/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText })
+      })
+      
+      if (!response.ok) throw new Error('API Error')
+      
+      const data = await response.json()
+      // data returns SendMessageResponse which has:
+      // data.userMessage and data.botMessage (or similar based on your DTO)
+      // En FoundryChatService devolvimos UserMessage y BotMessage
+      setMessages(prev => [...prev, data.botMessage || data.assistantMessage || data.responseMessage || {
+         id: Date.now() + 1,
+         role: 'assistant',
+         content: data.botMessage?.content || data.assistantMessage?.content || "**Error**: Formato de respuesta no reconocido"
+      }])
+    } catch (err) {
+      console.error("Chat API fetch error:", err)
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: "⚠️ Hubo un error al comunicarse con Azure AI Foundry. Verifica que el backend esté ejecutándose."
+      }])
+    } finally {
+      setIsTyping(false)
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
   }
 
   return (
@@ -79,19 +139,24 @@ export default function ChatPage() {
         {/* Messages */}
         <div className="chat-messages">
           <div className="chat-messages__container">
-            {/* User Message */}
-            <div className="chat-message chat-message--user animate-fade-in">
-              <div className="chat-message__bubble chat-message__bubble--user">
-                {chatMessages[0].content}
+            {messages.map((msg) => (
+              <div 
+                key={msg.id} 
+                className={`chat-message chat-message--${msg.role} animate-fade-in`}
+              >
+                <div className={`chat-message__bubble chat-message__bubble--${msg.role}`}>
+                  {msg.role === 'assistant' ? renderMessageWithCitations(msg) : msg.content}
+                </div>
               </div>
-            </div>
-
-            {/* Assistant Message */}
-            <div className="chat-message chat-message--assistant animate-fade-in">
-              <div className="chat-message__bubble chat-message__bubble--assistant">
-                {renderMessageWithCitations(currentMessage.content)}
+            ))}
+            
+            {isTyping && (
+              <div className="chat-message chat-message--assistant animate-fade-in">
+                <div className="chat-message__bubble chat-message__bubble--assistant chat-message__bubble--typing">
+                  Escribiendo<span className="typing-dots">...</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -104,8 +169,9 @@ export default function ChatPage() {
               placeholder="Escribe tu consulta sobre comercio internacional..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
-            <button className="chat-send-btn">
+            <button className="chat-send-btn" onClick={handleSendMessage} disabled={isTyping || !inputValue.trim()}>
               <Send size={18} />
             </button>
           </div>
@@ -138,7 +204,12 @@ export default function ChatPage() {
             </div>
             <div className="chat-sources__source-name">{activeCitation.source}</div>
             <div className="chat-sources__text">{activeCitation.text}</div>
-            <a href={activeCitation.link} className="chat-sources__link">
+            <a 
+              href={`http://localhost:5165/api/documents/${activeCitation.source}/download`} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="chat-sources__link"
+            >
               <ExternalLink size={13} />
               Ver documento original (PDF)
             </a>
