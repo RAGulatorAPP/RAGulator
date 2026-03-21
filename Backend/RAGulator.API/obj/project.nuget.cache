@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "F5gzcAi2qFQ=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\0x5\\Desktop\\RAGulator Project\\Backend\\RAGulator.API\\RAGulator.API.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\0x5\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.4\\microsoft.aspnetcore.openapi.10.0.4.nupkg.sha512",
+    "C:\\Users\\0x5\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
