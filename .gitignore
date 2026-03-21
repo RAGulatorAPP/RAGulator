@@ -27,6 +27,7 @@ Backend/**/publish/
 
 # Secrets & config overrides
 Backend/**/appsettings.Production.json
+Backend/**/appsettings.Development.json
 Backend/**/appsettings.Local.json
 **/secrets.json
 
