@@ -1,0 +1,50 @@
+# ==============================
+# .NET Backend
+# ==============================
+
+# Build output
+Backend/**/bin/
+Backend/**/obj/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# Roslyn cache
+*.csprojAssemblyReference.cache
+
+# NuGet packages
+*.nupkg
+*.snupkg
+Backend/**/.nuget/
+
+# Publish output
+Backend/**/publish/
+
+# Runtime data
+*.log
+
+# Secrets & config overrides
+Backend/**/appsettings.Production.json
+Backend/**/appsettings.Local.json
+**/secrets.json
+
+# ==============================
+# Frontend (Node / Vite)
+# ==============================
+
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.env
+Frontend/.env.local
+Frontend/.env.*.local
+
+# ==============================
+# General
+# ==============================
+
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
