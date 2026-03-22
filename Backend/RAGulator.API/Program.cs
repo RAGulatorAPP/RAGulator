@@ -49,6 +49,7 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<MockDataService>();
 builder.Services.AddSingleton<SearchService>(); // Añadido RAG
 builder.Services.AddSingleton<DocumentIngestionService>(); // Añadido Ingesta RAG
+builder.Services.AddSingleton<ISystemConfigurationService, CosmosSystemConfigurationService>();
 builder.Services.AddSingleton<FoundryChatService>();
 builder.Services.AddSingleton<ITelemetryService, CosmosTelemetryService>();
 

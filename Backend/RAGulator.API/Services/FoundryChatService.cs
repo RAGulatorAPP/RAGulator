@@ -15,15 +15,18 @@ public class FoundryChatService
     private readonly SearchService _searchService;
     private readonly ITelemetryService _telemetryService;
     private readonly ContentSafetyClient? _contentSafetyClient;
+    private readonly ISystemConfigurationService _configService;
 
     public FoundryChatService(
         IOptions<AzureAIFoundryConfig> config, 
         IOptions<ContentSafetyConfig> safetyConfig,
         SearchService searchService, 
-        ITelemetryService telemetryService)
+        ITelemetryService telemetryService,
+        ISystemConfigurationService configService)
     {
         _searchService = searchService;
         _telemetryService = telemetryService;
+        _configService = configService;
         var foundryConfig = config.Value;
         
         if (!string.IsNullOrWhiteSpace(safetyConfig.Value.Endpoint) && !string.IsNullOrWhiteSpace(safetyConfig.Value.ApiKey))
@@ -100,15 +103,18 @@ public class FoundryChatService
               $"Si la respuesta exacta no está en el contexto proporcionado, responde usando tu conocimiento general, pero incluye obligatoriamente una advertencia sutil diciendo algo como: 'Basado en mi conocimiento general (no aparece en los documentos cargados)...'\n\n" + 
               $"CONTEXTO OBTENIDO:\n{relevantContext}";
 
+        var systemConfig = await _configService.GetConfigurationAsync();
+        string finalSystemPrompt = $"{systemConfig.SystemPersona}\n\n" +
+                                   $"DIRECTRICES DE RESPUESTA:\n{systemConfig.ResponseGuidelines}\n\n" +
+                                   $"POLÍTICAS CORPORATIVAS:\n{systemConfig.CompanyPolicies}\n\n" +
+                                   groundingPrompt;
+
         var chatOptions = new ChatCompletionsOptions
         {
             Model = _deploymentName,
             Messages =
             {
-                new ChatRequestSystemMessage(
-                    "Eres el Asistente Inteligente de Comercio Internacional (RAGulator). " +
-                    "Responde a las preguntas del usuario de forma profesional y concisa. " + groundingPrompt),
-                
+                new ChatRequestSystemMessage(finalSystemPrompt),
                 new ChatRequestUserMessage(request.Message)
             }
         };
