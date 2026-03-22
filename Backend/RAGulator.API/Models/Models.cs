@@ -7,7 +7,7 @@ public record Citation(int Id, string Title, string Source, string Text, string 
 
 public record ChatMessage(int Id, string Role, string Content, List<Citation>? Citations = null, double? Groundedness = null);
 
-public record SendMessageRequest(string Message, int? ConversationId = null);
+public record SendMessageRequest(string Message, int? ConversationId = null, string? SessionId = null);
 
 public record SendMessageResponse(ChatMessage UserMessage, ChatMessage AssistantMessage);
 

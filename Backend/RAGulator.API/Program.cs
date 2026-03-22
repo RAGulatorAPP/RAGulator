@@ -150,6 +150,7 @@ builder.Services.AddSingleton<DocumentIngestionService>(); // Añadido Ingesta R
 builder.Services.AddSingleton<ISystemConfigurationService, CosmosSystemConfigurationService>();
 builder.Services.AddSingleton<FoundryChatService>();
 builder.Services.AddSingleton<ITelemetryService, CosmosTelemetryService>();
+builder.Services.AddSingleton<ChatHistoryService>();
 
 // =====================================================
 // CORS

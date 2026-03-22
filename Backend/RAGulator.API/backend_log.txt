@@ -1,0 +1,19 @@
+Usando la configuraci├│n de inicio de C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Properties\launchSettings.json...
+Compilando...
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Services\CosmosSystemConfigurationService.cs(15,12): warning CS8618: El elemento campo "_cosmosClient" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Controllers\DocumentsController.cs(31,50): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Controllers\DocumentsController.cs(31,45): warning CS8605: Conversi├│n unboxing a un valor posiblemente NULL. [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Services\SearchService.cs(62,34): warning CS8600: Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Services\SearchService.cs(66,32): warning CS8600: Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Services\SearchService.cs(67,35): warning CS8600: Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Services\SearchService.cs(75,55): warning CS8604: Posible argumento de referencia nulo para el par├ímetro "Title" en "Citation.Citation(int Id, string Title, string Source, string Text, string Link)". [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\Services\SearchService.cs(75,62): warning CS8604: Posible argumento de referencia nulo para el par├ímetro "Source" en "Citation.Citation(int Id, string Title, string Source, string Text, string Link)". [C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API\RAGulator.API.csproj]
+[AUTH BOOT] JWKS cargadas exitosamente: 5 llaves de firma descargadas.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5165
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API

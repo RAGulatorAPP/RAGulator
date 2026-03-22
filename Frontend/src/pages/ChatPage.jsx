@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Send, Clock, ExternalLink, ThumbsUp, ThumbsDown,
-  Shield, Sparkles, Search, Plus, LogOut
+  Shield, Sparkles, Search, Plus, LogOut, Trash2
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { loginRequest } from '../authConfig'
+import { authFetch } from '../authFetch'
+import DashboardLoader from './DashboardLoader'
 import './ChatPage.css'
 
 export default function ChatPage() {
@@ -21,35 +23,48 @@ export default function ChatPage() {
   const [activeCitation, setActiveCitation] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
   
-  // LocalStorage Persisted Chat History
-  const [sessions, setSessions] = useState(() => {
-    const saved = localStorage.getItem('ragulator_chat_sessions');
-    if (saved) {
-       try {
-         const parsed = JSON.parse(saved);
-         if (parsed && parsed.length > 0) return parsed;
-       } catch (error) {
-         console.warn('Error parseando historial de RAGulator:', error);
-       }
-    }
-    return [{
-      id: Date.now(),
-      title: 'Nueva Consulta',
-      messages: [{ id: Date.now(), role: 'assistant', content: '¡Hola! Soy tu Asistente de Comercio Internacional Gobernado. ¿En qué puedo ayudarte hoy?' }]
-    }];
-  });
+  // Cloud-persisted chat sessions
+  const [sessions, setSessions] = useState([])
+  const [activeSessionId, setActiveSessionId] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
-  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
-
+  // Load sessions from Cosmos DB on mount
   useEffect(() => {
-    localStorage.setItem('ragulator_chat_sessions', JSON.stringify(sessions));
-  }, [sessions]);
+    authFetch(instance, 'http://localhost:5165/api/chat/sessions')
+      .then(res => res.json())
+      .then(async (data) => {
+        if (data && data.length > 0) {
+          setSessions(data)
+          setActiveSessionId(data[0].id)
+        } else {
+          // Auto-crear primera sesión si no existe ninguna
+          const res = await authFetch(instance, 'http://localhost:5165/api/chat/sessions', { method: 'POST' })
+          const newSession = await res.json()
+          setSessions([{ id: newSession.id, title: newSession.title, updatedAt: newSession.updatedAt }])
+          setActiveSessionId(newSession.id)
+          setMessages(newSession.messages || [])
+        }
+      })
+      .catch(err => console.error("Error loading sessions:", err))
+      .finally(() => setIsLoadingSessions(false))
+  }, [])
 
-  // Derive active session state
-  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
-  const messages = activeSession.messages || [];
+  // Load messages when active session changes
+  useEffect(() => {
+    if (!activeSessionId) return
+    setIsLoadingMessages(true)
+    authFetch(instance, `http://localhost:5165/api/chat/sessions/${activeSessionId}`)
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data.messages || [])
+      })
+      .catch(err => console.error("Error loading messages:", err))
+      .finally(() => setIsLoadingMessages(false))
+  }, [activeSessionId])
 
-  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant')
 
   const renderMessageWithCitations = (messageObj) => {
     if (!messageObj.content) return null
@@ -77,30 +92,47 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
 
+    // Si no hay sesión activa, crear una antes de enviar
+    let currentSessionId = activeSessionId
+    if (!currentSessionId) {
+      try {
+        const res = await authFetch(instance, 'http://localhost:5165/api/chat/sessions', { method: 'POST' })
+        const newSession = await res.json()
+        setSessions(prev => [{ id: newSession.id, title: newSession.title, updatedAt: newSession.updatedAt }, ...prev])
+        setActiveSessionId(newSession.id)
+        setMessages(newSession.messages || [])
+        currentSessionId = newSession.id
+      } catch (err) {
+        console.error("Error creating session:", err)
+        return
+      }
+    }
+
     const userText = inputValue
     setInputValue('')
     
-    const newUserMsg = { id: Date.now(), role: 'user', content: userText }
-    const updatedMessages = [...messages, newUserMsg];
+    // Optimistic UI: show user message immediately
+    const tempUserMsg = { id: Date.now(), role: 'user', content: userText }
+    setMessages(prev => [...prev, tempUserMsg])
     
-    let updatedTitle = activeSession.title;
-    if (messages.length === 1 && activeSession.title === 'Nueva Consulta') {
-      updatedTitle = userText.length > 25 ? userText.substring(0, 25) + '...' : userText;
+    // Auto-title: update sidebar title optimistically
+    if (messages.length <= 1) {
+      const newTitle = userText.length > 25 ? userText.substring(0, 25) + '...' : userText
+      setSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, title: newTitle } : s))
     }
 
-    setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: updatedTitle, messages: updatedMessages } : s));
     setIsTyping(true)
 
     try {
-      let tokenResponse;
+      let tokenResponse
       try {
         tokenResponse = await instance.acquireTokenSilent({
             ...loginRequest,
             account: account
-        });
+        })
       } catch (err) {
-        console.warn("Silent token failed, acquiring popup", err);
-        tokenResponse = await instance.acquireTokenPopup(loginRequest);
+        console.warn("Silent token failed, acquiring popup", err)
+        tokenResponse = await instance.acquireTokenPopup(loginRequest)
       }
 
       const response = await fetch('http://localhost:5165/api/chat/message', {
@@ -109,7 +141,7 @@ export default function ChatPage() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${tokenResponse.accessToken}`
         },
-        body: JSON.stringify({ message: userText })
+        body: JSON.stringify({ message: userText, sessionId: currentSessionId })
       })
       
       if (!response.ok) throw new Error('API Error')
@@ -119,31 +151,51 @@ export default function ChatPage() {
          id: Date.now() + 1,
          role: 'assistant',
          content: "**Error**: Formato de respuesta no reconocido"
-      };
+      }
 
-      setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, newBotMsg] } : s));
+      setMessages(prev => [...prev, newBotMsg])
     } catch (err) {
       console.error("Chat API fetch error:", err)
-      setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, {
+      setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
         content: "⚠️ Hubo un error al comunicarse con el Backend. Verifica que el servidor C# esté ejecutándose."
-      }]} : s));
+      }])
     } finally {
       setIsTyping(false)
     }
   }
 
-  const handleNewChat = () => {
-    const newSession = {
-      id: Date.now(),
-      title: 'Nueva Consulta',
-      messages: [{ id: Date.now(), role: 'assistant', content: '¡Hola! Soy tu Asistente de Comercio Internacional Gobernado. ¿En qué puedo ayudarte hoy?' }]
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setActiveSessionId(newSession.id);
-    setActiveCitation(null);
-  };
+  const handleNewChat = async () => {
+    try {
+      const res = await authFetch(instance, 'http://localhost:5165/api/chat/sessions', { method: 'POST' })
+      const newSession = await res.json()
+      setSessions(prev => [{ id: newSession.id, title: newSession.title, updatedAt: newSession.updatedAt }, ...prev])
+      setActiveSessionId(newSession.id)
+      setMessages(newSession.messages || [])
+      setActiveCitation(null)
+    } catch (err) {
+      console.error("Error creating session:", err)
+    }
+  }
+
+  const handleDeleteSession = async (e, sessionId) => {
+    e.stopPropagation()
+    try {
+      await authFetch(instance, `http://localhost:5165/api/chat/sessions/${sessionId}`, { method: 'DELETE' })
+      setSessions(prev => prev.filter(s => s.id !== sessionId))
+      if (activeSessionId === sessionId) {
+        const remaining = sessions.filter(s => s.id !== sessionId)
+        if (remaining.length > 0) {
+          setActiveSessionId(remaining[0].id)
+        } else {
+          handleNewChat()
+        }
+      }
+    } catch (err) {
+      console.error("Error deleting session:", err)
+    }
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -170,17 +222,36 @@ export default function ChatPage() {
           </button>
         </div>
         <div className="chat-sidebar__list" style={{ overflowY: 'auto', flex: 1 }}>
-          {sessions.map((item) => (
-            <div 
-              key={item.id} 
-              className={`chat-sidebar__item ${item.id === activeSessionId ? 'chat-sidebar__item--active' : ''}`}
-              onClick={() => { setActiveSessionId(item.id); setActiveCitation(null); }}
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-            >
-              <MessageSquare size={14} style={{ flexShrink: 0, opacity: 0.7 }} />
-              <span className="chat-sidebar__item-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: '10px' }}>{item.title}</span>
+          {isLoadingSessions ? (
+            <div style={{padding: '32px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px'}}>
+              Cargando sesiones...
             </div>
-          ))}
+          ) : sessions.length === 0 ? (
+            <div style={{padding: '32px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px'}}>
+              No hay sesiones. Crea un nuevo chat.
+            </div>
+          ) : (
+            sessions.map((item) => (
+              <div 
+                key={item.id} 
+                className={`chat-sidebar__item ${item.id === activeSessionId ? 'chat-sidebar__item--active' : ''}`}
+                onClick={() => { setActiveSessionId(item.id); setActiveCitation(null); }}
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
+                  <MessageSquare size={14} style={{ flexShrink: 0, opacity: 0.7 }} />
+                  <span className="chat-sidebar__item-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: '10px' }}>{item.title}</span>
+                </div>
+                <button
+                  onClick={(e) => handleDeleteSession(e, item.id)}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px', borderRadius: '4px', opacity: 0, transition: 'opacity 0.15s' }}
+                  className="session-delete-btn"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))
+          )}
         </div>
 
         {/* User Identity Footer */}
@@ -235,16 +306,22 @@ export default function ChatPage() {
         {/* Messages */}
         <div className="chat-messages">
           <div className="chat-messages__container">
-            {messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={`chat-message chat-message--${msg.role} animate-fade-in`}
-              >
-                <div className={`chat-message__bubble chat-message__bubble--${msg.role}`}>
-                  {msg.role === 'assistant' ? renderMessageWithCitations(msg) : msg.content}
-                </div>
+            {isLoadingMessages ? (
+              <div style={{display: 'flex', justifyContent: 'center', padding: '48px 0', color: '#64748b'}}>
+                <div className="dashboard-loader__spinner" style={{width: 32, height: 32}} />
               </div>
-            ))}
+            ) : (
+              messages.map((msg) => (
+                <div 
+                  key={msg.id} 
+                  className={`chat-message chat-message--${msg.role} animate-fade-in`}
+                >
+                  <div className={`chat-message__bubble chat-message__bubble--${msg.role}`}>
+                    {msg.role === 'assistant' ? renderMessageWithCitations(msg) : msg.content}
+                  </div>
+                </div>
+              ))
+            )}
             
             {isTyping && (
               <div className="chat-message chat-message--assistant animate-fade-in">

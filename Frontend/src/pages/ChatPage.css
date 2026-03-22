@@ -56,6 +56,15 @@
   color: var(--text-primary);
 }
 
+.chat-sidebar__item:hover .session-delete-btn {
+  opacity: 1 !important;
+}
+
+.session-delete-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
 .chat-sidebar__item--active {
   background: var(--accent-primary-dim);
   color: var(--accent-primary);
