@@ -10,4 +10,5 @@ public interface ITelemetryService
     Task<List<object>> GetRecentAlertsAsync();
     Task<object> GetQualityMetricsAsync();
     Task<object> GetSecurityMetricsAsync();
+    Task<List<RAGulator.API.Models.Telemetry.ChatInteractionTelemetry>> GetAuditLogsAsync(int limit = 50);
 }

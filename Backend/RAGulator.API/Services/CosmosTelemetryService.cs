@@ -296,4 +296,24 @@ public class CosmosTelemetryService : ITelemetryService
              recentIncidents = recentIncidents
         };
     }
+
+    public async Task<List<ChatInteractionTelemetry>> GetAuditLogsAsync(int limit = 50)
+    {
+        var container = await GetContainerAsync();
+        if (container == null) return new List<ChatInteractionTelemetry>();
+
+        var query = new QueryDefinition("SELECT * FROM c ORDER BY c.Timestamp DESC OFFSET 0 LIMIT @limit")
+            .WithParameter("@limit", limit);
+            
+        var iterator = container.GetItemQueryIterator<ChatInteractionTelemetry>(query);
+        var results = new List<ChatInteractionTelemetry>();
+        
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            results.AddRange(response.ToList());
+        }
+        
+        return results;
+    }
 }

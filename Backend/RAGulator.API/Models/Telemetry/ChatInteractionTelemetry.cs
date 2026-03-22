@@ -16,4 +16,9 @@ public class ChatInteractionTelemetry
     public bool HasContentSafetyAlert { get; set; }
     public string SafetyAlertCategory { get; set; } = "None"; // Hate, Sexual, Violence, SelfHarm
     public int SafetyAlertSeverity { get; set; } = 0; // 0, 2, 4, 6
+    
+    // Forensic Traceability
+    public string UserPrompt { get; set; } = string.Empty;
+    public string AiResponse { get; set; } = string.Empty;
+    public List<string> Citations { get; set; } = new List<string>();
 }

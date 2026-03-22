@@ -132,4 +132,12 @@ public class LocalTelemetryService : ITelemetryService
              recentIncidents = new List<object>()
         });
     }
+
+    public Task<List<ChatInteractionTelemetry>> GetAuditLogsAsync(int limit = 50)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult(_interactions.OrderByDescending(x => x.Timestamp).Take(limit).ToList());
+        }
+    }
 }

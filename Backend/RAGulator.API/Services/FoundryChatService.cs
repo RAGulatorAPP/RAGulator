@@ -76,7 +76,9 @@ public class FoundryChatService
                          ResponseTimeMs = sw.ElapsedMilliseconds,
                          HasContentSafetyAlert = true,
                          SafetyAlertCategory = highestRisk.Category.ToString(),
-                         SafetyAlertSeverity = highestRisk.Severity ?? 0
+                         SafetyAlertSeverity = highestRisk.Severity ?? 0,
+                         UserPrompt = request.Message,
+                         AiResponse = "🔒 Mensaje bloqueado por Gobernanza RAG."
                     });
                     
                     var blockedMsg = $"🔒 Mensaje bloqueado por Gobernanza RAG. Se detectó una política infringida ({highestRisk.Category.ToString()}). El incidente fue reportado en Cosmos DB al Oficial de Seguridad.";
@@ -132,7 +134,9 @@ public class FoundryChatService
                  ResponseTimeMs = sw.ElapsedMilliseconds,
                  HasContentSafetyAlert = true,
                  SafetyAlertCategory = "AzureOpenAIBuiltInFilter (Hate/Violence)",
-                 SafetyAlertSeverity = 6
+                 SafetyAlertSeverity = 6,
+                 UserPrompt = request.Message,
+                 AiResponse = "🔒 Mensaje bloqueado nativamente por Azure OpenAI."
             });
             
             return new SendMessageResponse(
@@ -158,7 +162,10 @@ public class FoundryChatService
              CoherenceScore = coherenceScore,
              FluencyScore = fluencyScore,
              ContextRecallScore = contextRecallScore,
-             HasContentSafetyAlert = false
+             HasContentSafetyAlert = false,
+             UserPrompt = request.Message,
+             AiResponse = replyContent,
+             Citations = citations.Select(c => c.Title).ToList()
         });
 
         return new SendMessageResponse(
