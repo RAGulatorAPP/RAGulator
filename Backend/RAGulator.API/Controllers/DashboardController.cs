@@ -6,11 +6,20 @@ namespace RAGulator.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DashboardController(MockDataService dataService) : ControllerBase
+public class DashboardController(ITelemetryService telemetryService, DocumentIngestionService ingestionService) : ControllerBase
 {
-    [HttpGet]
-    public ActionResult<DashboardData> GetDashboard()
+    [HttpGet("metrics")]
+    public async Task<IActionResult> GetDashboardMetrics()
     {
-        return Ok(dataService.GetDashboardData());
+        int totalDocs = await ingestionService.GetIngestedDocumentCountAsync();
+        var snapshot = await telemetryService.GetMetricsSnapshotAsync(totalDocs);
+        var groundHistory = await telemetryService.GetGroundednessHistoryAsync();
+        var recentAlerts = await telemetryService.GetRecentAlertsAsync();
+        
+        return Ok(new {
+            metrics = snapshot,
+            lineChart = groundHistory,
+            alerts = recentAlerts
+        });
     }
 }

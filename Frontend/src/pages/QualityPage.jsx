@@ -1,12 +1,12 @@
+import { useState, useEffect } from 'react'
 import {
   Zap, TrendingUp, Activity
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis,
-  PolarRadiusAxis, Radar, Legend, AreaChart, Area
+  PolarRadiusAxis, Radar, Legend
 } from 'recharts'
-import { qualityMetrics, qualityChartData, radarData } from '../data/mockData'
 import './QualityPage.css'
 
 const metricColors = {
@@ -18,6 +18,25 @@ const metricColors = {
 }
 
 export default function QualityPage() {
+  const [data, setData] = useState({
+    metrics: {},
+    chartData: [],
+    radarData: []
+  });
+
+  useEffect(() => {
+    fetch('http://localhost:5165/api/quality/metrics')
+      .then(res => res.json())
+      .then(json => {
+        setData({
+          metrics: json.metrics || {},
+          chartData: json.lineChart || [],
+          radarData: json.radarChart || []
+        });
+      })
+      .catch(err => console.error(err));
+  }, []);
+
   return (
     <div className="admin-page">
       <div className="admin-page__topbar">
@@ -43,8 +62,8 @@ export default function QualityPage() {
 
         {/* Metric Cards */}
         <div className="quality-metrics stagger-children">
-          {Object.entries(qualityMetrics).map(([key, metric]) => {
-            const meta = metricColors[key]
+          {Object.entries(data.metrics).map(([key, metric]) => {
+            const meta = metricColors[key] || { color: '#94a3b8', label: key }
             return (
               <div key={key} className="quality-metric-card" style={{ '--metric-color': meta.color }}>
                 <div className="quality-metric-card__header">
@@ -73,7 +92,7 @@ export default function QualityPage() {
             </h3>
             <div className="quality-chart__container">
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={qualityChartData}>
+                <LineChart data={data.chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                   <XAxis
                     dataKey="date"
@@ -118,7 +137,7 @@ export default function QualityPage() {
             </h3>
             <div className="quality-chart__container">
               <ResponsiveContainer width="100%" height={280}>
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                <RadarChart data={data.radarData} cx="50%" cy="50%" outerRadius="70%">
                   <PolarGrid stroke="rgba(255,255,255,0.08)" />
                   <PolarAngleAxis
                     dataKey="metric"

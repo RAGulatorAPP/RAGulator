@@ -1,0 +1,17 @@
+using Newtonsoft.Json;
+
+namespace RAGulator.API.Models.Telemetry;
+
+public class ChatInteractionTelemetry
+{
+    [JsonProperty("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public double ResponseTimeMs { get; set; }
+    public double GroundednessScore { get; set; }
+    public double RelevanceScore { get; set; }
+    public double CoherenceScore { get; set; }
+    public double FluencyScore { get; set; }
+    public double ContextRecallScore { get; set; }
+    public bool HasContentSafetyAlert { get; set; }
+}

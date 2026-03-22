@@ -6,11 +6,11 @@ namespace RAGulator.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class QualityController(MockDataService dataService) : ControllerBase
+public class QualityController(ITelemetryService telemetryService) : ControllerBase
 {
-    [HttpGet]
-    public ActionResult<QualityData> GetQuality()
+    [HttpGet("metrics")]
+    public async Task<IActionResult> GetQualityMetrics()
     {
-        return Ok(dataService.GetQualityData());
+        return Ok(await telemetryService.GetQualityMetricsAsync());
     }
 }

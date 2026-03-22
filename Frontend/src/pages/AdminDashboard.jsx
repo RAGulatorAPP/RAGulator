@@ -1,10 +1,10 @@
+import { useState, useEffect } from 'react'
 import {
-  Sparkles, Clock, FileText, AlertTriangle, TrendingUp, Zap, Search as SearchIcon
+  Sparkles, Clock, FileText, AlertTriangle, TrendingUp, Zap
 } from 'lucide-react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
 } from 'recharts'
-import { dashboardMetrics, groundednessChartData, recentAlerts } from '../data/mockData'
 import './AdminDashboard.css'
 
 const alertTypeMap = {
@@ -15,6 +15,26 @@ const alertTypeMap = {
 }
 
 export default function AdminDashboard() {
+  const [metrics, setMetrics] = useState({
+    groundednessScore: { value: '0.00', trend: 'Calculando...' },
+    responseTime: { value: '0ms', trend: 'Midiendo...' },
+    documentsIngested: { value: 0, trend: 'Sincronizando...' },
+    contentSafetyAlerts: { value: 0, trend: 'Seguro' }
+  });
+  const [chartData, setChartData] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5165/api/dashboard/metrics')
+      .then(res => res.json())
+      .then(data => {
+        if (data.metrics) setMetrics(data.metrics);
+        if (data.lineChart) setChartData(data.lineChart);
+        if (data.alerts) setAlerts(data.alerts);
+      })
+      .catch(err => console.error("Error fetching dashboard telemetry:", err));
+  }, []);
+
   return (
     <div className="admin-page">
       {/* Breadcrumb & Status */}
@@ -52,12 +72,12 @@ export default function AdminDashboard() {
               <Sparkles size={15} />
               <span>Groundedness Score Medio</span>
             </div>
-            <div className="kpi-card__value">{dashboardMetrics.groundednessScore.value}</div>
+            <div className="kpi-card__value">{metrics.groundednessScore.value}</div>
             <div className="kpi-card__label">Alucinación Mitigada</div>
             <div className="kpi-card__progress">
               <div className="kpi-card__progress-bar" style={{ width: '93%' }} />
             </div>
-            <div className="kpi-card__trend">{dashboardMetrics.groundednessScore.trend}</div>
+            <div className="kpi-card__trend">{metrics.groundednessScore.trend}</div>
           </div>
 
           <div className="kpi-card kpi-card--purple">
@@ -65,12 +85,12 @@ export default function AdminDashboard() {
               <Clock size={15} />
               <span>Tiempo de Respuesta Promedio</span>
             </div>
-            <div className="kpi-card__value">{dashboardMetrics.responseTime.value}</div>
+            <div className="kpi-card__value">{metrics.responseTime.value}</div>
             <div className="kpi-card__label">Rendimiento Óptimo</div>
             <div className="kpi-card__progress">
               <div className="kpi-card__progress-bar kpi-card__progress-bar--purple" style={{ width: '70%' }} />
             </div>
-            <div className="kpi-card__trend">{dashboardMetrics.responseTime.trend}</div>
+            <div className="kpi-card__trend">{metrics.responseTime.trend}</div>
           </div>
 
           <div className="kpi-card kpi-card--green">
@@ -78,12 +98,12 @@ export default function AdminDashboard() {
               <FileText size={15} />
               <span>Documentos Ingestados</span>
             </div>
-            <div className="kpi-card__value">{dashboardMetrics.documentsIngested.value}</div>
+            <div className="kpi-card__value">{metrics.documentsIngested.value}</div>
             <div className="kpi-card__label">En Azure AI Search</div>
             <div className="kpi-card__progress">
               <div className="kpi-card__progress-bar kpi-card__progress-bar--green" style={{ width: '80%' }} />
             </div>
-            <div className="kpi-card__trend">{dashboardMetrics.documentsIngested.trend}</div>
+            <div className="kpi-card__trend">{metrics.documentsIngested.trend}</div>
           </div>
 
           <div className="kpi-card kpi-card--orange">
@@ -91,12 +111,12 @@ export default function AdminDashboard() {
               <AlertTriangle size={15} />
               <span>Alertas de Content Safety</span>
             </div>
-            <div className="kpi-card__value">{dashboardMetrics.contentSafetyAlerts.value}</div>
+            <div className="kpi-card__value">{metrics.contentSafetyAlerts.value}</div>
             <div className="kpi-card__label">Última semana</div>
             <div className="kpi-card__progress">
               <div className="kpi-card__progress-bar kpi-card__progress-bar--orange" style={{ width: '20%' }} />
             </div>
-            <div className="kpi-card__trend">Todos resueltos</div>
+            <div className="kpi-card__trend">{metrics.contentSafetyAlerts.trend}</div>
           </div>
         </div>
 
@@ -110,7 +130,7 @@ export default function AdminDashboard() {
             </h3>
             <div className="dashboard-chart__container">
               <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={groundednessChartData}>
+                <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="gradientGroundedness" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.3} />
@@ -158,18 +178,24 @@ export default function AdminDashboard() {
               Alertas Recientes
             </h3>
             <div className="dashboard-alerts__list">
-              {recentAlerts.map((alert) => (
-                <div key={alert.id} className="dashboard-alert-item">
-                  <span
-                    className="dashboard-alert-item__dot"
-                    style={{ background: alertTypeMap[alert.type]?.dot }}
-                  />
-                  <div className="dashboard-alert-item__content">
-                    <span className="dashboard-alert-item__msg">{alert.message}</span>
-                    <span className="dashboard-alert-item__time">{alert.time}</span>
-                  </div>
+              {alerts.length === 0 ? (
+                <div className="dashboard-alert-item" style={{justifyContent: 'center', opacity: 0.6}}>
+                   <span className="dashboard-alert-item__msg">Cargando eventos de seguridad...</span>
                 </div>
-              ))}
+              ) : (
+                alerts.map((alert) => (
+                  <div key={alert.id} className="dashboard-alert-item">
+                    <span
+                      className="dashboard-alert-item__dot"
+                      style={{ background: alertTypeMap[alert.type]?.dot || alertTypeMap.info.dot }}
+                    />
+                    <div className="dashboard-alert-item__content">
+                      <span className="dashboard-alert-item__msg">{alert.message}</span>
+                      <span className="dashboard-alert-item__time">{alert.time}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -252,6 +252,22 @@ public class DocumentIngestionService
         }
     }
 
+    public async Task<int> GetIngestedDocumentCountAsync()
+    {
+        if (_blobServiceClient == null) return 0;
+        try
+        {
+            var containerClient = _blobServiceClient.GetBlobContainerClient(BlobContainerName);
+            int count = 0;
+            await foreach (var blob in containerClient.GetBlobsAsync())
+            {
+                count++;
+            }
+            return count;
+        }
+        catch { return 0; }
+    }
+
     public async Task<Stream?> DownloadDocumentAsync(string fileName)
     {
         if (_blobServiceClient == null) return null;
