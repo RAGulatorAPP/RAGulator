@@ -4,6 +4,7 @@ using Azure.Identity;
 using Microsoft.Extensions.Options;
 using RAGulator.API.Configuration;
 using RAGulator.API.Models;
+using Azure.AI.ContentSafety;
 
 namespace RAGulator.API.Services;
 
@@ -13,12 +14,23 @@ public class FoundryChatService
     private readonly string _deploymentName;
     private readonly SearchService _searchService;
     private readonly ITelemetryService _telemetryService;
+    private readonly ContentSafetyClient? _contentSafetyClient;
 
-    public FoundryChatService(IOptions<AzureAIFoundryConfig> config, SearchService searchService, ITelemetryService telemetryService)
+    public FoundryChatService(
+        IOptions<AzureAIFoundryConfig> config, 
+        IOptions<ContentSafetyConfig> safetyConfig,
+        SearchService searchService, 
+        ITelemetryService telemetryService)
     {
         _searchService = searchService;
         _telemetryService = telemetryService;
         var foundryConfig = config.Value;
+        
+        if (!string.IsNullOrWhiteSpace(safetyConfig.Value.Endpoint) && !string.IsNullOrWhiteSpace(safetyConfig.Value.ApiKey))
+        {
+            _contentSafetyClient = new ContentSafetyClient(new Uri(safetyConfig.Value.Endpoint), new AzureKeyCredential(safetyConfig.Value.ApiKey));
+        }
+
         _deploymentName = string.IsNullOrWhiteSpace(foundryConfig.DeploymentName) ? "gpt-5.4-mini" : foundryConfig.DeploymentName;
         
         if (string.IsNullOrWhiteSpace(foundryConfig.Endpoint))
@@ -42,6 +54,42 @@ public class FoundryChatService
 
     public async Task<SendMessageResponse> ProcessMessageAsync(SendMessageRequest request)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // -------------------------------------------------------------
+        // PRE-FLIGHT CHECK: AZURE AI CONTENT SAFETY
+        // -------------------------------------------------------------
+        if (_contentSafetyClient != null)
+        {
+            try 
+            {
+                var safetyRequest = new AnalyzeTextOptions(request.Message);
+                var safetyResponse = await _contentSafetyClient.AnalyzeTextAsync(safetyRequest);
+                var highestRisk = safetyResponse.Value.CategoriesAnalysis.OrderByDescending(c => c.Severity).FirstOrDefault();
+                
+                if (highestRisk != null && highestRisk.Severity >= 2)
+                {
+                    _ = _telemetryService.LogInteractionAsync(new RAGulator.API.Models.Telemetry.ChatInteractionTelemetry {
+                         ResponseTimeMs = sw.ElapsedMilliseconds,
+                         HasContentSafetyAlert = true,
+                         SafetyAlertCategory = highestRisk.Category.ToString(),
+                         SafetyAlertSeverity = highestRisk.Severity ?? 0
+                    });
+                    
+                    var blockedMsg = $"🔒 Mensaje bloqueado por Gobernanza RAG. Se detectó una política infringida ({highestRisk.Category.ToString()}). El incidente fue reportado en Cosmos DB al Oficial de Seguridad.";
+                    return new SendMessageResponse(
+                        new ChatMessage(DateTime.UtcNow.Millisecond, "user", request.Message),
+                        new ChatMessage(DateTime.UtcNow.Millisecond + 1, "assistant", blockedMsg, new List<Citation>(), 0)
+                    );
+                }
+            } 
+            catch (Exception ex)
+            {
+                Console.WriteLine("Content Safety Check Error: " + ex.Message);
+            }
+        }
+        // -------------------------------------------------------------
+
         // 1. (RAG) Retrieval: Recuperamos contexto de Azure AI Search (texto y citas mapeadas)
         var (relevantContext, citations) = await _searchService.GetRelevantContextAsync(request.Message);
         
@@ -65,9 +113,27 @@ public class FoundryChatService
             }
         };
 
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var response = await _projectClient.CompleteAsync(chatOptions);
-        sw.Stop();
+        Response<ChatCompletions>? response = null;
+        try 
+        {
+            sw.Restart();
+            response = await _projectClient.CompleteAsync(chatOptions);
+            sw.Stop();
+        } 
+        catch (RequestFailedException ex) when (ex.ErrorCode == "content_filter")
+        {
+            _ = _telemetryService.LogInteractionAsync(new RAGulator.API.Models.Telemetry.ChatInteractionTelemetry {
+                 ResponseTimeMs = sw.ElapsedMilliseconds,
+                 HasContentSafetyAlert = true,
+                 SafetyAlertCategory = "AzureOpenAIBuiltInFilter (Hate/Violence)",
+                 SafetyAlertSeverity = 6
+            });
+            
+            return new SendMessageResponse(
+                new ChatMessage(DateTime.UtcNow.Millisecond, "user", request.Message),
+                new ChatMessage(DateTime.UtcNow.Millisecond + 1, "assistant", "🔒 Mensaje bloqueado por Gobernanza RAG. El filtro maestro integrado de Azure OpenAI rechazó categóricamente este prompt.", new List<Citation>(), 0)
+            );
+        }
 
         var replyContent = response.Value.Content;
         

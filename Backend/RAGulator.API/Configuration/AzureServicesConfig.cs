@@ -51,3 +51,14 @@ public class CosmosDBConfig
     public string ConnectionString { get; set; } = string.Empty;
     public string DatabaseName { get; set; } = "ragulator-db";
 }
+
+/// <summary>
+/// Azure AI Content Safety configuration.
+/// ApiKey and Endpoint loaded at runtime from Azure Key Vault / User Secrets.
+/// </summary>
+public class ContentSafetyConfig
+{
+    public const string Section = "AzureContentSafety";
+    public string Endpoint { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+}

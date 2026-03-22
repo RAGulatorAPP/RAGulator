@@ -242,4 +242,58 @@ public class CosmosTelemetryService : ITelemetryService
             lineChart = historyList
         };
     }
+
+    public async Task<object> GetSecurityMetricsAsync()
+    {
+        int totalBlocks = 0;
+        var distribution = new List<object>();
+        var recentIncidents = new List<object>();
+        
+        var container = await GetContainerAsync();
+        if (container != null)
+        {
+            try {
+                var qTotal = new QueryDefinition("SELECT VALUE COUNT(1) FROM c WHERE c.HasContentSafetyAlert = true");
+                using var itTotal = container.GetItemQueryIterator<int>(qTotal);
+                if (itTotal.HasMoreResults) totalBlocks = (await itTotal.ReadNextAsync()).FirstOrDefault();
+            } catch { }
+
+            try {
+                var qDist = new QueryDefinition("SELECT c.SafetyAlertCategory, COUNT(1) AS count FROM c WHERE c.HasContentSafetyAlert = true GROUP BY c.SafetyAlertCategory");
+                using var itDist = container.GetItemQueryIterator<dynamic>(qDist);
+                while (itDist.HasMoreResults)
+                {
+                    var response = await itDist.ReadNextAsync();
+                    foreach(var item in response)
+                    {
+                        distribution.Add(new { name = item.SafetyAlertCategory ?? "Unknown", value = item.count ?? 0 });
+                    }
+                }
+            } catch { }
+
+            try {
+                var qInc = new QueryDefinition("SELECT c.id, c.SafetyAlertCategory, c.SafetyAlertSeverity, c.Timestamp FROM c WHERE c.HasContentSafetyAlert = true ORDER BY c.Timestamp DESC OFFSET 0 LIMIT 10");
+                using var itInc = container.GetItemQueryIterator<dynamic>(qInc);
+                while (itInc.HasMoreResults)
+                {
+                    var response = await itInc.ReadNextAsync();
+                    foreach(var item in response)
+                    {
+                        recentIncidents.Add(new {
+                            id = item.id ?? Guid.NewGuid().ToString(),
+                            category = item.SafetyAlertCategory ?? "Unknown",
+                            severity = item.SafetyAlertSeverity ?? 0,
+                            time = ((DateTime)item.Timestamp).ToLocalTime().ToString("dd/MM/yy HH:mm")
+                        });
+                    }
+                }
+            } catch { }
+        }
+
+        return new {
+             totalBlocks = totalBlocks,
+             distribution = distribution,
+             recentIncidents = recentIncidents
+        };
+    }
 }

@@ -14,4 +14,6 @@ public class ChatInteractionTelemetry
     public double FluencyScore { get; set; }
     public double ContextRecallScore { get; set; }
     public bool HasContentSafetyAlert { get; set; }
+    public string SafetyAlertCategory { get; set; } = "None"; // Hate, Sexual, Violence, SelfHarm
+    public int SafetyAlertSeverity { get; set; } = 0; // 0, 2, 4, 6
 }

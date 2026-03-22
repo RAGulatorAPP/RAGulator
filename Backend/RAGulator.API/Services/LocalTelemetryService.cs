@@ -123,4 +123,13 @@ public class LocalTelemetryService : ITelemetryService
             lineChart = new List<object>() 
         });
     }
+
+    public Task<object> GetSecurityMetricsAsync()
+    {
+        return Task.FromResult<object>(new {
+             totalBlocks = 0,
+             distribution = new List<object>(),
+             recentIncidents = new List<object>()
+        });
+    }
 }

@@ -39,7 +39,8 @@ builder.Services
     .Configure<AzureAISearchConfig>(builder.Configuration.GetSection(AzureAISearchConfig.Section))
     .Configure<AzureDocumentIntelligenceConfig>(builder.Configuration.GetSection(AzureDocumentIntelligenceConfig.Section))
     .Configure<CosmosDBConfig>(builder.Configuration.GetSection(CosmosDBConfig.Section))
-    .Configure<AzureBlobStorageConfig>(builder.Configuration.GetSection(AzureBlobStorageConfig.Section));
+    .Configure<AzureBlobStorageConfig>(builder.Configuration.GetSection(AzureBlobStorageConfig.Section))
+    .Configure<ContentSafetyConfig>(builder.Configuration.GetSection(ContentSafetyConfig.Section));
 
 // =====================================================
 // SERVICIOS

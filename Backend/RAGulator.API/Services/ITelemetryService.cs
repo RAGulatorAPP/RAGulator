@@ -9,4 +9,5 @@ public interface ITelemetryService
     Task<List<object>> GetGroundednessHistoryAsync();
     Task<List<object>> GetRecentAlertsAsync();
     Task<object> GetQualityMetricsAsync();
+    Task<object> GetSecurityMetricsAsync();
 }
