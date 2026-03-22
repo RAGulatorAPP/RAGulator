@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Send, Clock, ExternalLink, ThumbsUp, ThumbsDown,
-  Shield, Sparkles, Search, Plus, Lock
+  Shield, Sparkles, Search, Plus, LogOut
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { loginRequest } from '../authConfig'
@@ -184,31 +184,25 @@ export default function ChatPage() {
         </div>
 
         {/* User Identity Footer */}
-        <div style={{ padding: '16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--surface)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} alt="avatar" style={{width: '38px', height: '38px', borderRadius: '50%', background: 'var(--bg)'}} />
+        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', background: 'rgba(0, 0, 0, 0.12)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} alt="avatar" style={{width: '42px', height: '42px', borderRadius: '50%', background: 'var(--surface)', border: '2px solid rgba(255, 255, 255, 0.1)'}} />
             <div style={{overflow: 'hidden'}}>
               <div style={{fontSize: '14px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: '1.2'}}>{username}</div>
-              <div style={{fontSize: '12px', color: 'var(--text-light)', marginTop: '2px'}}>{isAdmin ? "Admin Supremo" : "Adviser Básico"}</div>
+              <div style={{fontSize: '13px', color: 'rgba(255, 255, 255, 0.4)', marginTop: '4px'}}>{isAdmin ? "Administrador" : "Usuario"}</div>
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {isAdmin ? (
-              <button 
-                onClick={() => navigate('/admin')}
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '8px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
-              >
-                <Shield size={14} /> Admin
-              </button>
-            ) : null}
-            <button 
-              onClick={() => { instance.logoutRedirect().catch(e => console.error(e)); }}
-              style={{ flex: isAdmin ? 1 : '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
-            >
-              <Lock size={14} /> Salir
-            </button>
-          </div>
+          <button 
+            onClick={() => { instance.logoutRedirect().catch(e => console.error(e)); }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '10px', background: 'rgba(239, 68, 68, 0.05)', color: 'rgba(239, 68, 68, 0.8)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '500', transition: 'all 0.15s ease-out' }}
+            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.transform = 'scale(0.98)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.color = 'rgba(239, 68, 68, 0.8)'; e.currentTarget.style.transform = 'none'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
+          >
+            <LogOut size={16} /> Cerrar Sesión
+          </button>
         </div>
       </aside>
 
@@ -224,7 +218,17 @@ export default function ChatPage() {
             </span>
           </div>
           <div className="chat-header__right">
-             {/* Info de usuario movida al sidebar */}
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/admin')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'transform 0.1s' }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <Shield size={16} />
+                Panel de Administración
+              </button>
+            )}
           </div>
         </header>
 
