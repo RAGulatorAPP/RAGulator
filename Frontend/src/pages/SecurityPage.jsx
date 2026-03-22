@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Shield, AlertTriangle, Zap, ShieldOff, Server } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import './QualityPage.css' // We can reuse standard dashboard CSS logic
+import { useMsal } from '@azure/msal-react'
+import { authFetch } from '../authFetch'
+import './QualityPage.css'
 
 const categoryColors = {
   Hate: '#ef4444',
@@ -12,6 +14,7 @@ const categoryColors = {
 }
 
 export default function SecurityPage() {
+  const { instance } = useMsal()
   const [data, setData] = useState({
     totalBlocks: 0,
     distribution: [],
@@ -19,7 +22,7 @@ export default function SecurityPage() {
   });
 
   useEffect(() => {
-    fetch('http://localhost:5165/api/security/metrics')
+    authFetch(instance, 'http://localhost:5165/api/security/metrics')
       .then(res => res.json())
       .then(json => {
          setData(json);

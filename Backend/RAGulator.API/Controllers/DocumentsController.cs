@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RAGulator.API.Models;
 using RAGulator.API.Services;
@@ -7,6 +8,7 @@ using System;
 
 namespace RAGulator.API.Controllers;
 
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class DocumentsController : ControllerBase

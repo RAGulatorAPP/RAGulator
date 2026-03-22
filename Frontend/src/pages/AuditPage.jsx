@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { ClipboardList, Zap, ChevronDown, ChevronUp, ShieldAlert, CheckCircle2 } from 'lucide-react'
-import './PlaceholderPage.css' // CSS genérico de estructura
+import { useMsal } from '@azure/msal-react'
+import { authFetch } from '../authFetch'
+import './PlaceholderPage.css'
 
 export default function AuditPage() {
+  const { instance } = useMsal()
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5165/api/audit/logs?limit=50')
+    authFetch(instance, 'http://localhost:5165/api/audit/logs?limit=50')
       .then(res => res.json())
       .then(data => {
         setLogs(data);

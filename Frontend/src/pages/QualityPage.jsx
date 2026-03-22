@@ -7,6 +7,8 @@ import {
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, Radar, Legend
 } from 'recharts'
+import { useMsal } from '@azure/msal-react'
+import { authFetch } from '../authFetch'
 import './QualityPage.css'
 
 const metricColors = {
@@ -18,6 +20,7 @@ const metricColors = {
 }
 
 export default function QualityPage() {
+  const { instance } = useMsal()
   const [data, setData] = useState({
     metrics: {},
     chartData: [],
@@ -25,7 +28,7 @@ export default function QualityPage() {
   });
 
   useEffect(() => {
-    fetch('http://localhost:5165/api/quality/metrics')
+    authFetch(instance, 'http://localhost:5165/api/quality/metrics')
       .then(res => res.json())
       .then(json => {
         setData({

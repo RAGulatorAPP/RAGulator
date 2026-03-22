@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Settings, Zap, Save, CheckCircle2 } from 'lucide-react'
-import './PlaceholderPage.css' // Mantenemos el CSS estructural
+import { useMsal } from '@azure/msal-react'
+import { authFetch } from '../authFetch'
+import './PlaceholderPage.css'
 
 export default function ConfigPage() {
+  const { instance } = useMsal()
   const [config, setConfig] = useState({
     systemPersona: 'Cargando...',
     responseGuidelines: 'Cargando...',
@@ -13,7 +16,7 @@ export default function ConfigPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:5165/api/settings')
+    authFetch(instance, 'http://localhost:5165/api/settings')
       .then(res => res.json())
       .then(json => {
          setConfig({
@@ -30,11 +33,8 @@ export default function ConfigPage() {
     setSaveSuccess(false);
     
     try {
-      const response = await fetch('http://localhost:5165/api/settings', {
+      const response = await authFetch(instance, 'http://localhost:5165/api/settings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(config)
       });
       

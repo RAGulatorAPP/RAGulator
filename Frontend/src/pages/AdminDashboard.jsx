@@ -5,6 +5,8 @@ import {
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
 } from 'recharts'
+import { useMsal } from '@azure/msal-react'
+import { authFetch } from '../authFetch'
 import './AdminDashboard.css'
 
 const alertTypeMap = {
@@ -15,6 +17,7 @@ const alertTypeMap = {
 }
 
 export default function AdminDashboard() {
+  const { instance } = useMsal()
   const [metrics, setMetrics] = useState({
     groundednessScore: { value: '0.00', trend: 'Calculando...' },
     responseTime: { value: '0ms', trend: 'Midiendo...' },
@@ -25,7 +28,7 @@ export default function AdminDashboard() {
   const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5165/api/dashboard/metrics')
+    authFetch(instance, 'http://localhost:5165/api/dashboard/metrics')
       .then(res => res.json())
       .then(data => {
         if (data.metrics) setMetrics(data.metrics);

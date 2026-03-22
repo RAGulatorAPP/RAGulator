@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import {
   FileText, Upload, Search, Download, Eye, RefreshCw, Trash2, Zap, Filter, Loader2, CheckCircle2, AlertCircle
 } from 'lucide-react'
-// import { documentsStats, documents } from '../data/mockData' // Eliminado el mock para usar datos reales
+import { useMsal } from '@azure/msal-react'
+import { authFetch } from '../authFetch'
 import './DocumentsPage.css'
 
 const statusColors = {
@@ -12,6 +13,7 @@ const statusColors = {
 }
 
 export default function DocumentsPage() {
+  const { instance } = useMsal()
   const [searchTerm, setSearchTerm] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState(null)
@@ -26,7 +28,7 @@ export default function DocumentsPage() {
   const fetchDocuments = async () => {
     try {
       setIsLoadingDocs(true)
-      const res = await fetch('http://localhost:5165/api/documents')
+      const res = await authFetch(instance, 'http://localhost:5165/api/documents')
       const data = await res.json()
       setDocsList(data.documents || [])
       if (data.stats) setStats(data.stats)
@@ -57,7 +59,7 @@ export default function DocumentsPage() {
     formData.append('file', file)
 
     try {
-      const response = await fetch('http://localhost:5165/api/documents/upload', {
+      const response = await authFetch(instance, 'http://localhost:5165/api/documents/upload', {
         method: 'POST',
         body: formData,
       })
