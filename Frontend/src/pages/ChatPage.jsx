@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Send, Clock, ExternalLink, ThumbsUp, ThumbsDown,
-  Shield, Sparkles, ChevronRight, Search
+  Shield, Sparkles, Search, Plus
 } from 'lucide-react'
-import { chatHistory, chatMessages } from '../data/mockData'
 import './ChatPage.css'
 
 export default function ChatPage() {
@@ -13,15 +12,35 @@ export default function ChatPage() {
   const [activeCitation, setActiveCitation] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
   
-  // Estado local para los mensajes dinámicos
-  // Empezamos con el mensaje de bienvenida simulado (Mock Data ID=1)
-  const [messages, setMessages] = useState([
-    chatMessages[0] 
-  ])
+  // LocalStorage Persisted Chat History
+  const [sessions, setSessions] = useState(() => {
+    const saved = localStorage.getItem('ragulator_chat_sessions');
+    if (saved) {
+       try {
+         const parsed = JSON.parse(saved);
+         if (parsed && parsed.length > 0) return parsed;
+       } catch (error) {
+         console.warn('Error parseando historial de RAGulator:', error);
+       }
+    }
+    return [{
+      id: Date.now(),
+      title: 'Nueva Consulta',
+      messages: [{ id: Date.now(), role: 'assistant', content: '¡Hola! Soy tu Asistente de Comercio Internacional Gobernado. ¿En qué puedo ayudarte hoy?' }]
+    }];
+  });
 
-  // Obtener el último mensaje del asistente para mostrar sus citaciones si las tiene
-  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant')
-  const currentMessage = lastAssistantMessage || chatMessages[1]
+  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
+
+  useEffect(() => {
+    localStorage.setItem('ragulator_chat_sessions', JSON.stringify(sessions));
+  }, [sessions]);
+
+  // Derive active session state
+  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
+  const messages = activeSession.messages || [];
+
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
 
   const renderMessageWithCitations = (messageObj) => {
     if (!messageObj.content) return null
@@ -52,9 +71,15 @@ export default function ChatPage() {
     const userText = inputValue
     setInputValue('')
     
-    // Add user message to UI immediately
     const newUserMsg = { id: Date.now(), role: 'user', content: userText }
-    setMessages(prev => [...prev, newUserMsg])
+    const updatedMessages = [...messages, newUserMsg];
+    
+    let updatedTitle = activeSession.title;
+    if (messages.length === 1 && activeSession.title === 'Nueva Consulta') {
+      updatedTitle = userText.length > 25 ? userText.substring(0, 25) + '...' : userText;
+    }
+
+    setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: updatedTitle, messages: updatedMessages } : s));
     setIsTyping(true)
 
     try {
@@ -67,25 +92,35 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('API Error')
       
       const data = await response.json()
-      // data returns SendMessageResponse which has:
-      // data.userMessage and data.botMessage (or similar based on your DTO)
-      // En FoundryChatService devolvimos UserMessage y BotMessage
-      setMessages(prev => [...prev, data.botMessage || data.assistantMessage || data.responseMessage || {
+      const newBotMsg = data.botMessage || data.assistantMessage || data.responseMessage || {
          id: Date.now() + 1,
          role: 'assistant',
-         content: data.botMessage?.content || data.assistantMessage?.content || "**Error**: Formato de respuesta no reconocido"
-      }])
+         content: "**Error**: Formato de respuesta no reconocido"
+      };
+
+      setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, newBotMsg] } : s));
     } catch (err) {
       console.error("Chat API fetch error:", err)
-      setMessages(prev => [...prev, {
+      setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: "⚠️ Hubo un error al comunicarse con Azure AI Foundry. Verifica que el backend esté ejecutándose."
-      }])
+        content: "⚠️ Hubo un error al comunicarse con el Backend. Verifica que el servidor C# esté ejecutándose."
+      }]} : s));
     } finally {
       setIsTyping(false)
     }
   }
+
+  const handleNewChat = () => {
+    const newSession = {
+      id: Date.now(),
+      title: 'Nueva Consulta',
+      messages: [{ id: Date.now(), role: 'assistant', content: '¡Hola! Soy tu Asistente de Comercio Internacional Gobernado. ¿En qué puedo ayudarte hoy?' }]
+    };
+    setSessions(prev => [newSession, ...prev]);
+    setActiveSessionId(newSession.id);
+    setActiveCitation(null);
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -98,16 +133,30 @@ export default function ChatPage() {
     <div className="chat-layout">
       {/* Left Sidebar — Chat History */}
       <aside className="chat-sidebar">
-        <div className="chat-sidebar__header">
-          <Clock size={16} />
-          <span>Historial de Consultas Recientes</span>
+        <div className="chat-sidebar__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '20px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={16} />
+            <span style={{ fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sesiones</span>
+          </div>
+          <button 
+            onClick={handleNewChat}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--primary)', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
+          >
+            <Plus size={14} />
+            Nuevo Chat
+          </button>
         </div>
-        <div className="chat-sidebar__list">
-          {chatHistory.map((item) => (
-            <button key={item.id} className={`chat-sidebar__item ${item.id === 1 ? 'chat-sidebar__item--active' : ''}`}>
-              <MessageSquare size={14} />
-              <span className="chat-sidebar__item-text">{item.title}</span>
-            </button>
+        <div className="chat-sidebar__list" style={{ overflowY: 'auto', flex: 1 }}>
+          {sessions.map((item) => (
+            <div 
+              key={item.id} 
+              className={`chat-sidebar__item ${item.id === activeSessionId ? 'chat-sidebar__item--active' : ''}`}
+              onClick={() => { setActiveSessionId(item.id); setActiveCitation(null); }}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <MessageSquare size={14} style={{ flexShrink: 0, opacity: 0.7 }} />
+              <span className="chat-sidebar__item-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: '10px' }}>{item.title}</span>
+            </div>
           ))}
         </div>
       </aside>
@@ -233,12 +282,12 @@ export default function ChatPage() {
         <div className="chat-sources__groundedness">
           <div className="chat-sources__groundedness-header">
             <span>Groundedness Score:</span>
-            <span className="chat-sources__groundedness-value">{currentMessage.groundedness}</span>
+            <span className="chat-sources__groundedness-value">{lastAssistantMessage?.groundedness || 0}</span>
           </div>
           <div className="chat-sources__groundedness-bar">
             <div
               className="chat-sources__groundedness-fill"
-              style={{ width: `${currentMessage.groundedness * 100}%` }}
+              style={{ width: `${(lastAssistantMessage?.groundedness || 0) * 100}%` }}
             />
           </div>
           <span className="chat-sources__groundedness-desc">
