@@ -1,9 +1,17 @@
 using Azure.Identity;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Identity.Web;
 using RAGulator.API.Configuration;
 using RAGulator.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// =====================================================
+// AUTENTICACIÓN (Microsoft Entra ID)
+// =====================================================
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
 // =====================================================
 // FASE 1: ZERO-SECRETS POLICY — Azure Key Vault
@@ -70,6 +78,10 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors("AllowFrontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

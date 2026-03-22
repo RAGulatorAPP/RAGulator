@@ -2,12 +2,21 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Send, Clock, ExternalLink, ThumbsUp, ThumbsDown,
-  Shield, Sparkles, Search, Plus
+  Shield, Sparkles, Search, Plus, Lock
 } from 'lucide-react'
+import { useMsal } from '@azure/msal-react'
+import { loginRequest } from '../authConfig'
 import './ChatPage.css'
 
 export default function ChatPage() {
   const navigate = useNavigate()
+  const { instance, accounts } = useMsal()
+  
+  const account = accounts[0] || instance.getActiveAccount()
+  const roles = account?.idTokenClaims?.roles || []
+  const isAdmin = roles.includes('Admin')
+  const username = account?.name || 'Usuario'
+
   const [inputValue, setInputValue] = useState('')
   const [activeCitation, setActiveCitation] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -83,9 +92,23 @@ export default function ChatPage() {
     setIsTyping(true)
 
     try {
+      let tokenResponse;
+      try {
+        tokenResponse = await instance.acquireTokenSilent({
+            ...loginRequest,
+            account: account
+        });
+      } catch (err) {
+        console.warn("Silent token failed, acquiring popup", err);
+        tokenResponse = await instance.acquireTokenPopup(loginRequest);
+      }
+
       const response = await fetch('http://localhost:5165/api/chat/message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenResponse.accessToken}`
+        },
         body: JSON.stringify({ message: userText })
       })
       
@@ -159,6 +182,34 @@ export default function ChatPage() {
             </div>
           ))}
         </div>
+
+        {/* User Identity Footer */}
+        <div style={{ padding: '16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--surface)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} alt="avatar" style={{width: '38px', height: '38px', borderRadius: '50%', background: 'var(--bg)'}} />
+            <div style={{overflow: 'hidden'}}>
+              <div style={{fontSize: '14px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: '1.2'}}>{username}</div>
+              <div style={{fontSize: '12px', color: 'var(--text-light)', marginTop: '2px'}}>{isAdmin ? "Admin Supremo" : "Adviser Básico"}</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {isAdmin ? (
+              <button 
+                onClick={() => navigate('/admin')}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '8px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
+              >
+                <Shield size={14} /> Admin
+              </button>
+            ) : null}
+            <button 
+              onClick={() => { instance.logoutRedirect().catch(e => console.error(e)); }}
+              style={{ flex: isAdmin ? 1 : '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              <Lock size={14} /> Salir
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Main Chat Area */}
@@ -173,15 +224,7 @@ export default function ChatPage() {
             </span>
           </div>
           <div className="chat-header__right">
-            <div className="chat-header__user">
-              <div className="chat-header__user-info">
-                <span className="chat-header__user-name">María González</span>
-                <span className="chat-header__user-role">Entra ID Verificado</span>
-              </div>
-              <div className="chat-header__avatar">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Maria" alt="avatar" />
-              </div>
-            </div>
+             {/* Info de usuario movida al sidebar */}
           </div>
         </header>
 
@@ -225,12 +268,7 @@ export default function ChatPage() {
             </button>
           </div>
           <div className="chat-status-bar">
-            <button
-              className="chat-admin-link"
-              onClick={() => navigate('/admin')}
-            >
-              Panel de Administración
-            </button>
+            <div />
             <div className="chat-status-bar__right">
               <span className="chat-status-dot" />
               <span>Conectado a Azure OpenAI · RAG Pipeline Activo</span>
