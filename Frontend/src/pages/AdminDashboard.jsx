@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { useMsal } from '@azure/msal-react'
 import { authFetch } from '../authFetch'
+import DashboardLoader from './DashboardLoader'
 import './AdminDashboard.css'
 
 const alertTypeMap = {
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
   });
   const [chartData, setChartData] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     authFetch(instance, 'http://localhost:5165/api/dashboard/metrics')
@@ -35,7 +37,8 @@ export default function AdminDashboard() {
         if (data.lineChart) setChartData(data.lineChart);
         if (data.alerts) setAlerts(data.alerts);
       })
-      .catch(err => console.error("Error fetching dashboard telemetry:", err));
+      .catch(err => console.error("Error fetching dashboard telemetry:", err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   return (
@@ -54,6 +57,10 @@ export default function AdminDashboard() {
       </div>
 
       <div className="admin-page__content">
+        {isLoading ? (
+          <DashboardLoader message="Cargando panel de gobernanza" />
+        ) : (
+        <div className="dashboard-content-loaded">
         {/* Welcome */}
         <div className="dashboard-welcome card">
           <div className="dashboard-welcome__left">
@@ -202,6 +209,8 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+        </div>
+        )}
       </div>
     </div>
   )

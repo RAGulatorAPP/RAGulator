@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
-import { Settings, Zap, Save, CheckCircle2 } from 'lucide-react'
+import { Settings, Zap, Save, CheckCircle2, Brain, FileText, ShieldAlert } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { authFetch } from '../authFetch'
+import DashboardLoader from './DashboardLoader'
+import './DashboardLoader.css'
 import './PlaceholderPage.css'
 
 export default function ConfigPage() {
   const { instance } = useMsal()
   const [config, setConfig] = useState({
-    systemPersona: 'Cargando...',
-    responseGuidelines: 'Cargando...',
-    companyPolicies: 'Cargando...'
+    systemPersona: '',
+    responseGuidelines: '',
+    companyPolicies: ''
   });
   
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -25,7 +28,8 @@ export default function ConfigPage() {
            companyPolicies: json.companyPolicies || ''
          });
       })
-      .catch(err => console.error("Error al cargar config", err));
+      .catch(err => console.error("Error al cargar config", err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleSave = async () => {
@@ -40,7 +44,7 @@ export default function ConfigPage() {
       
       if (response.ok) {
         setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000); // Hide success after 3s
+        setTimeout(() => setSaveSuccess(false), 3000);
       }
     } catch (err) {
       console.error("Error al guardar:", err);
@@ -63,72 +67,108 @@ export default function ConfigPage() {
         </div>
       </div>
       
-      <div className="admin-page__content" style={{maxWidth: '800px', margin: '0 auto'}}>
-        <div className="placeholder-page" style={{textAlign: 'left', padding: '32px', alignItems: 'flex-start'}}>
-          <div style={{display: 'flex', alignItems: 'center', marginBottom: '24px', width: '100%'}}>
-              <div className="placeholder-page__icon" style={{margin: '0 16px 0 0', width: '60px', height: '60px', flexShrink: 0}}>
-                <Settings size={32} />
-              </div>
-              <div style={{flexGrow: 1}}>
-                  <h2 style={{margin: '0 0 8px 0', fontSize: '1.5rem', color: '#f8fafc'}}>Identidad & Reglas del LLM</h2>
-                  <p style={{margin: 0, color: '#94a3b8'}}>El RAG está diseñado para ser de Dominio-Agnóstico. Moldea su personalidad, formato de respuesta y restricciones corporativas directamente inyectando valores al <b>Prompt del Sistema</b> aquí.</p>
-              </div>
+      <div className="admin-page__content">
+        {isLoading ? (
+          <DashboardLoader message="Cargando configuración del agente" />
+        ) : (
+        <div className="config-page__grid dashboard-content-loaded">
+
+          {/* Header Card */}
+          <div className="config-page__header">
+            <div className="config-page__header-icon">
+              <Settings size={26} />
+            </div>
+            <div className="config-page__header-text">
+              <h2>Identidad & Reglas del Agente RAG</h2>
+              <p>
+                El sistema RAG es agnóstico al dominio. Define su personalidad, formato de respuesta y 
+                restricciones corporativas inyectando valores al <strong style={{color:'#c4b5fd'}}>System Prompt</strong>. 
+                Los cambios se aplican instantáneamente al modelo.
+              </p>
+            </div>
           </div>
-          
-          <div style={{width: '100%', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-             <div className="setting-group">
-                <label style={{display:'block', marginBottom:'8px', fontWeight:600, color:'#cbd5e1'}}>1. Rol Categórico (System Persona)</label>
-                <textarea 
-                  value={config.systemPersona}
-                  onChange={(e) => setConfig({...config, systemPersona: e.target.value})}
-                  rows={3}
-                  style={{width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#f8fafc', fontFamily: 'inherit', resize: 'vertical'}}
-                  placeholder="Ej: Eres un abogado corporativo experto en leyes europeas..."
-                />
-             </div>
 
-             <div className="setting-group">
-                <label style={{display:'block', marginBottom:'8px', fontWeight:600, color:'#cbd5e1'}}>2. Directrices de Respuesta (Formato)</label>
-                <textarea 
-                  value={config.responseGuidelines}
-                  onChange={(e) => setConfig({...config, responseGuidelines: e.target.value})}
-                  rows={4}
-                  style={{width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#f8fafc', fontFamily: 'inherit', resize: 'vertical'}}
-                  placeholder="Ej: Responde en viñetas siempre que sea posible. Usa tono formal y asertivo."
-                />
-             </div>
+          {/* Card 1: System Persona */}
+          <div className="config-card">
+            <div className="config-card__header">
+              <div className="config-card__number">1</div>
+              <div>
+                <div className="config-card__label">
+                  <Brain size={14} style={{display:'inline', marginRight:'6px', verticalAlign:'middle'}} />
+                  Rol Categórico (System Persona)
+                </div>
+                <div className="config-card__sublabel">Define quién es el agente y cuál es su expertise</div>
+              </div>
+            </div>
+            <textarea 
+              value={config.systemPersona}
+              onChange={(e) => setConfig({...config, systemPersona: e.target.value})}
+              rows={3}
+              placeholder="Ej: Eres un abogado corporativo experto en leyes europeas de comercio exterior..."
+            />
+          </div>
 
-             <div className="setting-group">
-                <label style={{display:'block', marginBottom:'8px', fontWeight:600, color:'#cbd5e1'}}>3. Políticas Corporativas & Restricciones</label>
-                <textarea 
-                  value={config.companyPolicies}
-                  onChange={(e) => setConfig({...config, companyPolicies: e.target.value})}
-                  rows={4}
-                  style={{width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#ef4444', fontFamily: 'inherit', resize: 'vertical'}}
-                  placeholder="Ej: Bajo NINGUNA circunstancia recomiendes inversión. Si no sabes, responde 'No me consta en el manual'."
-                />
-             </div>
+          {/* Card 2: Response Guidelines */}
+          <div className="config-card">
+            <div className="config-card__header">
+              <div className="config-card__number">2</div>
+              <div>
+                <div className="config-card__label">
+                  <FileText size={14} style={{display:'inline', marginRight:'6px', verticalAlign:'middle'}} />
+                  Directrices de Respuesta (Formato)
+                </div>
+                <div className="config-card__sublabel">Controla el tono, estructura y estilo de las respuestas</div>
+              </div>
+            </div>
+            <textarea 
+              value={config.responseGuidelines}
+              onChange={(e) => setConfig({...config, responseGuidelines: e.target.value})}
+              rows={4}
+              placeholder="Ej: Responde siempre en viñetas. Usa tono formal y asertivo. Cita las fuentes."
+            />
+          </div>
 
-             <div style={{display: 'flex', alignItems: 'center', marginTop: '16px', gap: '16px'}}>
-                 <button 
-                  onClick={handleSave} 
-                  disabled={isSaving}
-                  style={{padding: '12px 24px', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', fontWeight: 600, cursor: isSaving ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px'}}
-                 >
-                   <Save size={18} />
-                   {isSaving ? 'Aplicando Inyección...' : 'Guardar y Orquestar Agente'}
-                 </button>
+          {/* Card 3: Company Policies (Danger zone) */}
+          <div className="config-card config-card--danger">
+            <div className="config-card__header">
+              <div className="config-card__number" style={{background: 'rgba(239, 68, 68, 0.12)', color: '#f87171'}}>3</div>
+              <div>
+                <div className="config-card__label">
+                  <ShieldAlert size={14} style={{display:'inline', marginRight:'6px', verticalAlign:'middle', color:'#f87171'}} />
+                  Políticas Corporativas & Restricciones
+                </div>
+                <div className="config-card__sublabel">Reglas de seguridad que el agente NUNCA puede violar</div>
+              </div>
+            </div>
+            <textarea 
+              value={config.companyPolicies}
+              onChange={(e) => setConfig({...config, companyPolicies: e.target.value})}
+              rows={4}
+              placeholder="Ej: Bajo NINGUNA circunstancia recomiendes inversión. Si no sabes, responde 'No me consta en el manual'."
+            />
+          </div>
 
-                 {saveSuccess && (
-                    <span style={{color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500}}>
-                       <CheckCircle2 size={18} />
-                       Sistema Re-entrenado Instantáneamente
-                    </span>
-                 )}
-             </div>
+          {/* Actions */}
+          <div className="config-page__actions">
+            <button 
+              onClick={handleSave} 
+              disabled={isSaving}
+              className="config-page__save-btn"
+            >
+              <Save size={18} />
+              {isSaving ? 'Aplicando cambios...' : 'Guardar y Aplicar al Agente'}
+            </button>
+
+            {saveSuccess && (
+              <span className="config-page__success">
+                <CheckCircle2 size={18} />
+                Configuración aplicada exitosamente
+              </span>
+            )}
           </div>
 
         </div>
+        )}
       </div>
     </div>
   )

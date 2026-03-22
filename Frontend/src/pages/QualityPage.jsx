@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import { useMsal } from '@azure/msal-react'
 import { authFetch } from '../authFetch'
+import DashboardLoader from './DashboardLoader'
 import './QualityPage.css'
 
 const metricColors = {
@@ -26,6 +27,7 @@ export default function QualityPage() {
     chartData: [],
     radarData: []
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     authFetch(instance, 'http://localhost:5165/api/quality/metrics')
@@ -37,7 +39,8 @@ export default function QualityPage() {
           radarData: json.radarChart || []
         });
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   return (
@@ -55,6 +58,10 @@ export default function QualityPage() {
       </div>
 
       <div className="admin-page__content">
+        {isLoading ? (
+          <DashboardLoader message="Cargando métricas de calidad" />
+        ) : (
+        <div className="dashboard-content-loaded">
         {/* Header */}
         <div className="quality-header">
           <h2 className="quality-header__title">Evaluación de Calidad RAG</h2>
@@ -178,6 +185,8 @@ export default function QualityPage() {
             </button>
           </div>
         </div>
+        </div>
+        )}
       </div>
     </div>
   )

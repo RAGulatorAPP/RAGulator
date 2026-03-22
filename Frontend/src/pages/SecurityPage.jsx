@@ -3,6 +3,7 @@ import { Shield, AlertTriangle, Zap, ShieldOff, Server } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useMsal } from '@azure/msal-react'
 import { authFetch } from '../authFetch'
+import DashboardLoader from './DashboardLoader'
 import './QualityPage.css'
 
 const categoryColors = {
@@ -20,6 +21,7 @@ export default function SecurityPage() {
     distribution: [],
     recentIncidents: []
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     authFetch(instance, 'http://localhost:5165/api/security/metrics')
@@ -27,7 +29,8 @@ export default function SecurityPage() {
       .then(json => {
          setData(json);
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   return (
@@ -44,6 +47,10 @@ export default function SecurityPage() {
         </div>
       </div>
       <div className="admin-page__content">
+        {isLoading ? (
+          <DashboardLoader message="Cargando métricas de seguridad" />
+        ) : (
+        <div className="dashboard-content-loaded">
         <div className="quality-header">
           <h2 className="quality-header__title"><Shield size={24} style={{display:'inline', marginRight:'8px', verticalAlign:'middle'}}/> Content Safety & Firewall</h2>
           <p className="quality-header__desc">
@@ -152,6 +159,8 @@ export default function SecurityPage() {
           </div>
         </div>
 
+        </div>
+        )}
       </div>
     </div>
   )
