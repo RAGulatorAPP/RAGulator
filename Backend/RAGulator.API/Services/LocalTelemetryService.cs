@@ -50,9 +50,10 @@ public class LocalTelemetryService : ITelemetryService
     {
         lock (_lock)
         {
-            int totalInteractions = _interactions.Count;
-            double avgGroundedness = totalInteractions > 0 ? _interactions.Average(i => i.GroundednessScore) : 0.98;
-            double avgLatency = totalInteractions > 0 ? _interactions.Average(i => i.ResponseTimeMs) : 1200;
+            var evaluable = _interactions.Where(i => !i.HasContentSafetyAlert).ToList();
+            int totalInteractions = evaluable.Count;
+            double avgGroundedness = totalInteractions > 0 ? evaluable.Average(i => i.GroundednessScore) : 0.98;
+            double avgLatency = totalInteractions > 0 ? evaluable.Average(i => i.ResponseTimeMs) : 1200;
             int totalAlerts = _interactions.Count(i => i.HasContentSafetyAlert);
 
             return Task.FromResult<object>(new
@@ -69,7 +70,7 @@ public class LocalTelemetryService : ITelemetryService
     {
         lock (_lock)
         {
-            var recent = _interactions.OrderBy(i => i.Timestamp).TakeLast(20).ToList();
+            var recent = _interactions.Where(i => !i.HasContentSafetyAlert).OrderBy(i => i.Timestamp).TakeLast(20).ToList();
             var result = new List<object>();
             
             if (recent.Count == 0)

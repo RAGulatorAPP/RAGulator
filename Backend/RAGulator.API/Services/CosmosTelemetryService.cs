@@ -48,7 +48,7 @@ public class CosmosTelemetryService : ITelemetryService
         if (container != null)
         {
             // Query aggregates: AVG(c.GroundednessScore), AVG(c.ResponseTimeMs)
-            var query = new QueryDefinition("SELECT VALUE AVG(c.GroundednessScore) FROM c");
+            var query = new QueryDefinition("SELECT VALUE AVG(c.GroundednessScore) FROM c WHERE c.HasContentSafetyAlert != true");
             using var groundIterator = container.GetItemQueryIterator<double>(query);
             if (groundIterator.HasMoreResults)
             {
@@ -56,7 +56,7 @@ public class CosmosTelemetryService : ITelemetryService
                 avgGroundedness = response.FirstOrDefault();
             }
 
-            var queryLat = new QueryDefinition("SELECT VALUE AVG(c.ResponseTimeMs) FROM c");
+            var queryLat = new QueryDefinition("SELECT VALUE AVG(c.ResponseTimeMs) FROM c WHERE c.HasContentSafetyAlert != true");
             using var latIterator = container.GetItemQueryIterator<double>(queryLat);
             if (latIterator.HasMoreResults)
             {
@@ -89,7 +89,7 @@ public class CosmosTelemetryService : ITelemetryService
         
         if (container != null)
         {
-            var query = new QueryDefinition("SELECT c.Timestamp, c.GroundednessScore FROM c ORDER BY c.Timestamp DESC OFFSET 0 LIMIT 20");
+            var query = new QueryDefinition("SELECT c.Timestamp, c.GroundednessScore FROM c WHERE c.HasContentSafetyAlert != true ORDER BY c.Timestamp DESC OFFSET 0 LIMIT 20");
             using var iterator = container.GetItemQueryIterator<dynamic>(query);
             var items = new List<dynamic>();
             while (iterator.HasMoreResults)
@@ -158,7 +158,7 @@ public class CosmosTelemetryService : ITelemetryService
     {
         try 
         {
-            var query = new QueryDefinition($"SELECT VALUE AVG(c.{fieldName}) FROM c");
+            var query = new QueryDefinition($"SELECT VALUE AVG(c.{fieldName}) FROM c WHERE c.HasContentSafetyAlert != true");
             using var iterator = container.GetItemQueryIterator<double?>(query);
             if (iterator.HasMoreResults)
             {
@@ -214,7 +214,7 @@ public class CosmosTelemetryService : ITelemetryService
         var historyList = new List<object>();
         if (container != null)
         {
-            var querySeries = new QueryDefinition("SELECT c.Timestamp, c.GroundednessScore, c.RelevanceScore, c.CoherenceScore, c.FluencyScore FROM c ORDER BY c.Timestamp DESC OFFSET 0 LIMIT 20");
+            var querySeries = new QueryDefinition("SELECT c.Timestamp, c.GroundednessScore, c.RelevanceScore, c.CoherenceScore, c.FluencyScore FROM c WHERE c.HasContentSafetyAlert != true ORDER BY c.Timestamp DESC OFFSET 0 LIMIT 20");
             using var histIterator = container.GetItemQueryIterator<dynamic>(querySeries);
             var hItems = new List<dynamic>();
             while (histIterator.HasMoreResults)

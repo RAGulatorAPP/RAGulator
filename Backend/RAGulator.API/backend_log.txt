@@ -17,3 +17,31 @@ info: Microsoft.Hosting.Lifetime[0]
       Hosting environment: Development
 info: Microsoft.Hosting.Lifetime[0]
       Content root path: C:\Users\0x5\Desktop\RAGulator Project\Backend\RAGulator.API
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
+[AUTH OK] User: Juan Pablo | Roles: Admin
