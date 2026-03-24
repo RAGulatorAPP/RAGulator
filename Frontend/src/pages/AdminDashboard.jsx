@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
 } from 'recharts'
 import { useMsal } from '@azure/msal-react'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import './AdminDashboard.css'
 
@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    authFetch(instance, 'http://localhost:5165/api/dashboard/metrics')
+    authFetch(instance, getApiUrl('/api/dashboard/metrics'))
       .then(res => res.json())
       .then(data => {
         if (data.metrics) setMetrics(data.metrics);

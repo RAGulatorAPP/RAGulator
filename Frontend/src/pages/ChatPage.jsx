@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { loginRequest } from '../authConfig'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import './ChatPage.css'
 
@@ -32,7 +32,7 @@ export default function ChatPage() {
 
   // Load sessions from Cosmos DB on mount
   useEffect(() => {
-    authFetch(instance, 'http://localhost:5165/api/chat/sessions')
+    authFetch(instance, getApiUrl('/api/chat/sessions'))
       .then(res => res.json())
       .then(async (data) => {
         if (data && data.length > 0) {
@@ -40,7 +40,7 @@ export default function ChatPage() {
           setActiveSessionId(data[0].id)
         } else {
           // Auto-crear primera sesión si no existe ninguna
-          const res = await authFetch(instance, 'http://localhost:5165/api/chat/sessions', { method: 'POST' })
+          const res = await authFetch(instance, getApiUrl('/api/chat/sessions'), { method: 'POST' })
           const newSession = await res.json()
           setSessions([{ id: newSession.id, title: newSession.title, updatedAt: newSession.updatedAt }])
           setActiveSessionId(newSession.id)
@@ -55,7 +55,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!activeSessionId) return
     setIsLoadingMessages(true)
-    authFetch(instance, `http://localhost:5165/api/chat/sessions/${activeSessionId}`)
+    authFetch(instance, getApiUrl(`/api/chat/sessions/${activeSessionId}`))
       .then(res => res.json())
       .then(data => {
         setMessages(data.messages || [])
@@ -96,7 +96,7 @@ export default function ChatPage() {
     let currentSessionId = activeSessionId
     if (!currentSessionId) {
       try {
-        const res = await authFetch(instance, 'http://localhost:5165/api/chat/sessions', { method: 'POST' })
+        const res = await authFetch(instance, getApiUrl('/api/chat/sessions'), { method: 'POST' })
         const newSession = await res.json()
         setSessions(prev => [{ id: newSession.id, title: newSession.title, updatedAt: newSession.updatedAt }, ...prev])
         setActiveSessionId(newSession.id)
@@ -135,7 +135,7 @@ export default function ChatPage() {
         tokenResponse = await instance.acquireTokenPopup(loginRequest)
       }
 
-      const response = await fetch('http://localhost:5165/api/chat/message', {
+      const response = await fetch(getApiUrl('/api/chat/message'), {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ export default function ChatPage() {
 
   const handleNewChat = async () => {
     try {
-      const res = await authFetch(instance, 'http://localhost:5165/api/chat/sessions', { method: 'POST' })
+      const res = await authFetch(instance, getApiUrl('/api/chat/sessions'), { method: 'POST' })
       const newSession = await res.json()
       setSessions(prev => [{ id: newSession.id, title: newSession.title, updatedAt: newSession.updatedAt }, ...prev])
       setActiveSessionId(newSession.id)
@@ -182,7 +182,7 @@ export default function ChatPage() {
   const handleDeleteSession = async (e, sessionId) => {
     e.stopPropagation()
     try {
-      await authFetch(instance, `http://localhost:5165/api/chat/sessions/${sessionId}`, { method: 'DELETE' })
+      await authFetch(instance, getApiUrl(`/api/chat/sessions/${sessionId}`), { method: 'DELETE' })
       setSessions(prev => prev.filter(s => s.id !== sessionId))
       if (activeSessionId === sessionId) {
         const remaining = sessions.filter(s => s.id !== sessionId)
@@ -373,7 +373,7 @@ export default function ChatPage() {
             <div className="chat-sources__source-name">{activeCitation.source}</div>
             <div className="chat-sources__text">{activeCitation.text}</div>
             <a 
-              href={`http://localhost:5165/api/documents/${activeCitation.source}/download`} 
+              href={getApiUrl(`/api/documents/${activeCitation.source}/download`)} 
               target="_blank" 
               rel="noreferrer" 
               className="chat-sources__link"

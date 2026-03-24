@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Settings, Zap, Save, CheckCircle2, Brain, FileText, ShieldAlert } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import './DashboardLoader.css'
 import './PlaceholderPage.css'
@@ -19,7 +19,7 @@ export default function ConfigPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    authFetch(instance, 'http://localhost:5165/api/settings')
+    authFetch(instance, getApiUrl('/api/settings'))
       .then(res => res.json())
       .then(json => {
          setConfig({
@@ -37,7 +37,7 @@ export default function ConfigPage() {
     setSaveSuccess(false);
     
     try {
-      const response = await authFetch(instance, 'http://localhost:5165/api/settings', {
+      const response = await authFetch(instance, getApiUrl('/api/settings'), {
         method: 'POST',
         body: JSON.stringify(config)
       });

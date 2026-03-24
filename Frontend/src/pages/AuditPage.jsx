@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ClipboardList, Zap, ChevronDown, ChevronUp, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import './PlaceholderPage.css'
 
@@ -12,7 +12,7 @@ export default function AuditPage() {
   const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
-    authFetch(instance, 'http://localhost:5165/api/audit/logs?limit=50')
+    authFetch(instance, getApiUrl('/api/audit/logs?limit=50'))
       .then(res => res.json())
       .then(data => {
         setLogs(data);

@@ -1,5 +1,14 @@
 import { loginRequest } from './authConfig';
 
+// Centralizamos la URL del API para que cambie según el entorno (Local vs Production)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+                     (window.location.hostname === 'localhost' 
+                        ? 'http://localhost:5165' 
+                        : 'https://ragulator.azurewebsites.net');
+
+export const getApiUrl = (path) => `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+
+
 /**
  * Wrapper around fetch() that automatically injects the MSAL Bearer token.
  * Use this instead of raw fetch() for all API calls to the protected backend.

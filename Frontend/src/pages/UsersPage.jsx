@@ -4,7 +4,7 @@ import {
   ShieldCheck, X, Plus, Trash2, CheckCircle2, AlertCircle
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import './UsersPage.css'
 
@@ -28,7 +28,7 @@ export default function UsersPage() {
   const [toast, setToast] = useState(null)
 
   const fetchUsers = () => {
-    authFetch(instance, 'http://localhost:5165/api/users')
+    authFetch(instance, getApiUrl('/api/users'))
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
@@ -66,7 +66,7 @@ export default function UsersPage() {
     if (!selectedRoleId || !modalUser) return
     setAssigning(true)
     try {
-      const res = await authFetch(instance, `http://localhost:5165/api/users/${modalUser.id}/roles`, {
+      const res = await authFetch(instance, getApiUrl(`/api/users/${modalUser.id}/roles`), {
         method: 'POST',
         body: JSON.stringify({ roleId: selectedRoleId })
       })
@@ -101,7 +101,7 @@ export default function UsersPage() {
 
   const handleRemoveRole = async (userId, assignmentId, roleName) => {
     try {
-      const res = await authFetch(instance, `http://localhost:5165/api/users/${userId}/roles/${assignmentId}`, {
+      const res = await authFetch(instance, getApiUrl(`/api/users/${userId}/roles/${assignmentId}`), {
         method: 'DELETE'
       })
       const data = await res.json()

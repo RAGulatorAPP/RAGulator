@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Shield, AlertTriangle, Zap, ShieldOff, Server } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useMsal } from '@azure/msal-react'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import './QualityPage.css'
 
@@ -24,7 +24,7 @@ export default function SecurityPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    authFetch(instance, 'http://localhost:5165/api/security/metrics')
+    authFetch(instance, getApiUrl('/api/security/metrics'))
       .then(res => res.json())
       .then(json => {
          setData(json);

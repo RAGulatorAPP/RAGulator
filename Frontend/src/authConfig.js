@@ -4,7 +4,7 @@ export const msalConfig = {
     auth: {
         clientId: "825f6989-41ad-4edc-95a9-ef9e28b226da", 
         authority: "https://login.microsoftonline.com/5ac096d7-4048-4d58-9169-9c2e9a7ae698", 
-        redirectUri: "http://localhost:5173",
+        redirectUri: typeof window !== 'undefined' ? window.location.origin : "http://localhost:5173",
     },
     cache: {
         cacheLocation: "sessionStorage", // Recomendado para SPA

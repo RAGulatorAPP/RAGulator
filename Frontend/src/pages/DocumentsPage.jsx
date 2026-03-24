@@ -3,7 +3,7 @@ import {
   FileText, Upload, Search, Download, Eye, RefreshCw, Trash2, Zap, Filter, Loader2, CheckCircle2, AlertCircle
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
-import { authFetch } from '../authFetch'
+import { authFetch, getApiUrl } from '../authFetch'
 import './DocumentsPage.css'
 
 const statusColors = {
@@ -28,7 +28,7 @@ export default function DocumentsPage() {
   const fetchDocuments = async () => {
     try {
       setIsLoadingDocs(true)
-      const res = await authFetch(instance, 'http://localhost:5165/api/documents')
+      const res = await authFetch(instance, getApiUrl('/api/documents'))
       const data = await res.json()
       setDocsList(data.documents || [])
       if (data.stats) setStats(data.stats)
@@ -59,7 +59,7 @@ export default function DocumentsPage() {
     formData.append('file', file)
 
     try {
-      const response = await authFetch(instance, 'http://localhost:5165/api/documents/upload', {
+      const response = await authFetch(instance, getApiUrl('/api/documents/upload'), {
         method: 'POST',
         body: formData,
       })
@@ -90,7 +90,7 @@ export default function DocumentsPage() {
     
     try {
       setIsLoadingDocs(true);
-      const res = await fetch(`http://localhost:5165/api/documents/${encodeURIComponent(fileName)}`, {
+      const res = await fetch(getApiUrl(`/api/documents/${encodeURIComponent(fileName)}`), {
         method: 'DELETE'
       });
       
@@ -308,7 +308,7 @@ export default function DocumentsPage() {
                   <td>{doc.date}</td>
                   <td>
                     <div className="docs-cell-actions">
-                      <a href={`http://localhost:5165/api/documents/${doc.name}/download`} target="_blank" rel="noreferrer" className="docs-action-btn" title="Ver" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}><Eye size={14} /></a>
+                      <a href={getApiUrl(`/api/documents/${doc.name}/download`)} target="_blank" rel="noreferrer" className="docs-action-btn" title="Ver" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}><Eye size={14} /></a>
                       <button className="docs-action-btn" title="Re-indexar" onClick={() => alert('Para re-indexar, elimina el documento de la base y vuélvelo a subir.')}><RefreshCw size={14} /></button>
                       <button className="docs-action-btn docs-action-btn--danger" title="Eliminar" onClick={() => handleDelete(doc.name)}><Trash2 size={14} /></button>
                     </div>
