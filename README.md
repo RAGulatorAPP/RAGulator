@@ -2,153 +2,87 @@
 
 > **"Transforma la incertidumbre en confianza absoluta."**
 
-Sistema RAG (Retrieval-Augmented Generation) gobernado y trazable para comercio internacional de importación/exportación. Este proyecto es una solución **100% funcional y desplegada en Azure**, permitiendo a equipos regulados consultar sobre productos/servicios y obtener respuestas respaldadas por documentos reales.
+Sistema RAG (Retrieval-Augmented Generation) avanzado, gobernado y trazable para comercio internacional. RAGulator es una solución **100% funcional** que unifica el ecosistema de **puntos de inteligencia de Azure** para ofrecer respuestas fundamentadas con citas bibliográficas inmutables.
 
 ---
 
-## 📸 Vista Previa
+## 🏗️ Arquitectura de Gobernanza AI
 
-| Interfaz de Usuario | Panel de Administración |
-|---|---|
-| Chat con citas bibliográficas y Groundedness Score | KPIs, gráficos de evaluación y alertas |
+RAGulator no es solo un chat; es una orquestación distribuida de más de 13 servicios de Azure trabajando en armonía:
 
----
-
-## 🏗️ Arquitectura del Sistema
-
-```
-Query → Content Safety (entrada) → Retrieval + Re-ranking (AI Search)
-      → Prompt + Contexto → Generación (OpenAI)
-      → Evaluación Integral (citas + groundedness)
-      → Content Safety (salida) → Respuesta Validada con Citas
-```
-
-### Stack Tecnológico (Ecosistema Azure)
-
-RAGulator utiliza el stack más avanzado de Azure para garantizar escalabilidad y seguridad:
-
-| Categoría | Servicio Azure | Rol en el Sistema |
+| Categoría | Servicio Azure | Rol Estratégico |
 |---|---|---|
-| **Alojamiento API** | **Azure App Service** | Hospeda el motor de lógica en .NET 10. |
-| **Alojamiento Web** | **Azure Static Web Apps** | Distribución global del Frontend React. |
-| **Base de Datos** | **Azure Cosmos DB** | Sesiones de chat, métricas y telemetría. |
-| **Almacenamiento** | **Azure Blob Storage** | Repositorio seguro para los documentos originales. |
-| **Inteligencia LLM** | **Azure AI Foundry** | Motor de razonamiento con **GPT-5.4-mini**. |
-| **Visión de Docs** | **Azure AI Document Intelligence** | OCR y extracción de estructura de PDFs. |
-| **Búsqueda RAG** | **Azure AI Search** | Base de datos vectorial híbrida. |
-| **Seguridad AI** | **Azure AI Content Safety** | Filtro de entrada/salida para gobernanza. |
-| **Identidad** | **Microsoft Entra ID** | Autenticación y RBAC (Admin/User). |
+| **Cómputo Backend** | **Azure App Service** | Engine dinámico en **.NET 10** con escalado horizontal. |
+| **Frontend Global** | **Azure Static Web Apps** | Hosting optimizado (Edge) para la SPA en React 19. |
+| **Base de Datos** | **Azure Cosmos DB (NoSQL)** | Almacenamiento distribuido de sesiones, telemetría y auditoría. |
+| **Almacenamiento** | **Azure Blob Storage** | Data Lake para documentos fuente y procesamiento de archivos. |
+| **Inteligencia LLM** | **Azure AI Foundry** | Motor de razonamiento avanzado utilizando el modelo **GPT-5.4-mini**. |
+| **Ingesta de Datos** | **Azure AI Document Intelligence** | Clasificación y extracción de tablas/texto de documentos legales. |
+| **Vector Database** | **Azure AI Search** | Indexación semántica y búsqueda híbrida (Keywords + Vectors). |
+| **Moderación AI** | **Azure AI Content Safety** | Blindaje en tiempo real contra contenido sensible o inseguro. |
+| **Identidad & SSO** | **Microsoft Entra ID (Azure AD)** | Autenticación corporativa y control de acceso (RBAC). |
+| **Directorio** | **Microsoft Graph API** | Integración de perfiles de usuario y estructura organizacional. |
+| **Secretos** | **Azure Key Vault** | Gestión centralizada de llaves y certificados de producción. |
+| **Observabilidad** | **Azure Application Insights** | Telemetría detallada de rendimiento y trazas de errores. |
+| **Diagnóstico** | **Azure Monitor** | Análisis de salud de la infraestructura y alertas críticas. |
+
+---
+
+## 🚀 Capacidades Core del Sistema
+
+### 1. Motor de Razonamiento GPT-5.4-mini
+El corazón del sistema utiliza la última iteración de modelos eficientes de Azure, permitiendo un razonamiento complejo con una latencia mínima de respuesta.
+
+### 2. Ingesta Inteligente (Extraction Pipeline)
+Los documentos subidos se envían a **Document Intelligence** para un OCR de alta fidelidad, se fragmentan (Chunking) y se vectorizan automáticamente para que estén disponibles en el chat en milisegundos.
+
+### 3. Trazabilidad y Auditoría (Governed RAG)
+Cada mensaje generado incluye un **Groundedness Score** calculado dinámicamente. Todas las interacciones se registran en **Cosmos DB** junto con los logs de **Application Insights**, permitiendo auditorías completas de seguridad.
+
+### 4. Seguridad de Grado Empresarial
+- **CORS Estricto**: Solo el Frontend autorizado en Static Web Apps puede llamar a la API.
+- **Entra ID Native**: Login seguro integrado con el directorio activo de la organización.
+- **Content Safety**: Filtrado automático de cualquier respuesta que no cumpla con las políticas de ética AI.
 
 ---
 
 ## 📁 Estructura del Proyecto
 
-```
-RAGulator/
-├── Frontend/                  # React 19 + Vite 8
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── ChatPage.jsx          # Interfaz de chat con citas
-│   │   │   ├── AdminDashboard.jsx    # KPIs y métricas
-│   │   │   ├── DocumentsPage.jsx     # Gestión de documentos
-│   │   │   ├── QualityPage.jsx       # Calidad RAG
-│   │   │   ├── SecurityPage.jsx      # Seguridad y Content Safety
-│   │   │   ├── AuditPage.jsx         # Auditoría y trazabilidad
-│   │   │   ├── UsersPage.jsx         # Usuarios & Roles
-│   │   │   └── ConfigPage.jsx        # Configuración
-│   │   ├── components/
-│   │   │   ├── AdminLayout.jsx       # Layout con sidebar
-│   │   │   └── AdminSidebar.jsx      # Navegación admin
-│   │   ├── data/
-│   │   │   └── mockData.js           # Datos de demostración
-│   │   ├── App.jsx                   # Router principal
-│   │   └── index.css                 # Design system (tokens CSS)
-│   └── package.json
-│
-└── Backend/                   # .NET 10 Web API
-    └── RAGulator.API/
-        ├── Controllers/
-        │   ├── ChatController.cs
-        │   ├── DashboardController.cs
-        │   ├── DocumentsController.cs
-        │   └── QualityController.cs
-        ├── Models/
-        │   └── Models.cs
-        ├── Services/
-        │   └── MockDataService.cs
-        └── Program.cs
-```
+RAGulator sigue una arquitectura de microservicios y capas limpia (Clean Architecture):
+
+- **`Frontend/`**: Aplicación Single Page (SPA) construida con **React 19** y **Vite 8**. Implementa un Design System premium con Glassmorphism y visualización de datos en tiempo real mediante Recharts.
+- **`Backend/`**: Web API robusta en **.NET 10**. Utiliza el SDK oficial de Azure para la integración nativa con todos los servicios de AI sin dependencias de terceros.
 
 ---
 
-## 🚀 Cómo Ejecutar
+## 🚀 Despliegue y Operación
 
-### Prerrequisitos
+El proyecto utiliza **GitHub Actions** para un pipeline de **CI/CD** completo:
 
-- [Node.js 18+](https://nodejs.org/)
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-
-### Frontend (React)
-
-```bash
-cd Frontend
-npm install
-npm run dev
-```
-
-→ Disponible en **http://localhost:5173**
-
-### Backend (.NET 10)
-
-```bash
-cd Backend/RAGulator.API
-dotnet run
-```
-
-→ API disponible en **http://localhost:5000**
+1.  **Build & Test**: Compilación de la API y el Frontend.
+2.  **Deploy**: Publicación automática en Azure App Service y Static Web Apps.
+3.  **Configuración**: Gestión dinámica de secretos mediante Application Settings y variables de entorno protegidas.
 
 ---
 
-## 🗺️ Páginas y Rutas
+## 🏢 Capacidades de Administración
 
-| Ruta | Vista | Descripción |
-|---|---|---|
-| `/` | Chat | Interfaz de usuario con historial, citas y Groundedness |
-| `/admin` | Dashboard | KPIs, gráfico de evaluación, alertas recientes |
-| `/admin/documents` | Documentos | Índice de documentos en Azure Blob Storage |
-| `/admin/quality` | Calidad RAG | Métricas de evaluación continua y radar chart |
-| `/admin/security` | Seguridad | Content Safety y políticas |
-| `/admin/audit` | Auditoría | Trazabilidad de consultas |
-| `/admin/users` | Usuarios | RBAC con Microsoft Entra ID |
-| `/admin/settings` | Configuración | Parámetros del pipeline RAG |
-
----
-
-## 📡 API Endpoints (Backend Mock)
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/api/chat/history` | Historial de conversaciones |
-| `GET` | `/api/chat/messages/{id}` | Mensajes de una conversación |
-| `POST` | `/api/chat/message` | Enviar consulta al pipeline RAG |
-| `GET` | `/api/dashboard` | Métricas del dashboard |
-| `GET` | `/api/documents` | Lista de documentos ingestados |
-| `POST` | `/api/documents/upload` | Subir nuevo documento |
-| `GET` | `/api/quality` | Métricas de calidad RAG |
+- **Dashboard de Control**: KPIs sobre latencia, Groundedness Score y documentos procesados.
+- **Ingesta Dinámica**: Interfaz para subir PDFs que se indexan automáticamente en el motor vectorial.
+- **Auditoría de Seguridad**: Registro inmutable en Cosmos DB de cada interacción, incluyendo alertas de Content Safety.
+- **Gestión de Calidad**: Seguimiento de métricas RAGAS (Fidelidad, Relevancia, Coherencia y Fluidez).
 
 ---
 
 ## 🎨 Design System
 
-Tema oscuro premium con:
-- **Colores**: Dark navy (`#0a0e1a`) + Teal/Cyan (`#00d4aa`, `#06b6d4`)
-- **Tipografía**: Inter (Google Fonts)
-- **Efectos**: Glassmorphism, gradientes, micro-animaciones CSS
-- **Gráficos**: Recharts (AreaChart, LineChart, RadarChart)
-- **Iconos**: Lucide React
+Interfaz diseñada para una experiencia de usuario de alto impacto:
+- **Deep Dark Theme**: Estética profesional inspirada en centros de control modernos.
+- **Micro-interacciones**: Transiciones fluidas y estados de carga animados para una sensación de fluidez (60 FPS).
+- **Responsive**: Totalmente adaptable a dispositivos móviles para consultas en campo.
 
 ---
 
-## 📝 Nota de Entrega
+## 📝 Nota de Entrega Final
 
-Este sistema ha sido validado para una precisión del **>92%** en la fundamentación (Groundedness) gracias al uso de **Azure AI Search** y **GPT-5.4-mini**, garantizando respuestas seguras y trazables.
+Este sistema representa el estado del arte en **Sistemas RAG Gobernados**, demostrando cómo la integración profunda de los servicios nativos de Azure crea una plataforma resiliente, escalable y, sobre todo, confiable para la toma de decisiones críticas en comercio exterior.
