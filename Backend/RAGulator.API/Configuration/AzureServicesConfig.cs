@@ -37,8 +37,9 @@ public class AzureDocumentIntelligenceConfig
 
 public class AzureBlobStorageConfig
 {
-    public const string Section = "AzureBlobStorage";
-    public string ConnectionString { get; set; } = string.Empty;
+    public const string Section = "RAGStorage";
+    public string SecretConn { get; set; } = string.Empty;
+    public string Bucket { get; set; } = "documents";
 }
 
 /// <summary>

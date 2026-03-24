@@ -8,6 +8,7 @@ using Azure.Search.Documents.Indexes.Models;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using RAGulator.API.Configuration;
 
 namespace RAGulator.API.Services;
@@ -20,12 +21,13 @@ public class DocumentIngestionService
     private readonly BlobServiceClient? _blobServiceClient;
     
     private readonly string _indexName;
-    private const string BlobContainerName = "rag-documents";
+    private readonly string _containerName;
 
     public DocumentIngestionService(
         IOptions<AzureDocumentIntelligenceConfig> docConfig, 
         IOptions<AzureAISearchConfig> searchConfig,
-        IOptions<AzureBlobStorageConfig> blobConfig)
+        IOptions<AzureBlobStorageConfig> blobConfig,
+        IConfiguration configuration)
     {
         var docIntel = docConfig.Value;
         var aiSearch = searchConfig.Value;
@@ -64,7 +66,16 @@ public class DocumentIngestionService
             throw new InvalidOperationException("Las credenciales de configuración local no pasaron la validación de Entra ni de API Keys.");
         }
         
-        var blobConnStr = blobConfig.Value.ConnectionString;
+        _indexName = aiSearch.IndexName;
+        _containerName = string.IsNullOrWhiteSpace(blobConfig.Value.Bucket) ? "documents" : blobConfig.Value.Bucket;
+        
+        var blobConnStr = blobConfig.Value.SecretConn;
+        if (string.IsNullOrWhiteSpace(blobConnStr))
+        {
+            // Fallback: Intentar leer desde la sección "Connection Strings" estándar de Azure
+            blobConnStr = configuration.GetConnectionString("AzureBlobStorage");
+        }
+
         if (!string.IsNullOrWhiteSpace(blobConnStr))
         {
             _blobServiceClient = new BlobServiceClient(blobConnStr);
@@ -85,7 +96,7 @@ public class DocumentIngestionService
             {
                 try
                 {
-                    var containerClient = _blobServiceClient.GetBlobContainerClient(BlobContainerName);
+                    var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                     // Ahora que usamos Backend Proxy, el contenedor debe ser Privado por seguridad total.
                     await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
                     
@@ -240,7 +251,7 @@ public class DocumentIngestionService
             {
                 try
                 {
-                    var containerClient = _blobServiceClient.GetBlobContainerClient(BlobContainerName);
+                    var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                     var blobClient = containerClient.GetBlobClient(fileName);
                     await blobClient.DeleteIfExistsAsync();
                 }
@@ -257,7 +268,7 @@ public class DocumentIngestionService
         if (_blobServiceClient == null) return 0;
         try
         {
-            var containerClient = _blobServiceClient.GetBlobContainerClient(BlobContainerName);
+            var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
             int count = 0;
             await foreach (var blob in containerClient.GetBlobsAsync())
             {
@@ -274,7 +285,7 @@ public class DocumentIngestionService
 
         try
         {
-            var containerClient = _blobServiceClient.GetBlobContainerClient(BlobContainerName);
+            var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
             var blobClient = containerClient.GetBlobClient(fileName);
 
             if (await blobClient.ExistsAsync())
