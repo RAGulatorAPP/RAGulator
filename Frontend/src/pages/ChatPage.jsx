@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Send, Clock, ExternalLink, ThumbsUp, ThumbsDown,
-  Shield, Sparkles, Search, Plus, LogOut, Trash2
+  Shield, Sparkles, Search, Plus, LogOut, Trash2, ZoomIn
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { loginRequest } from '../authConfig'
@@ -29,8 +29,62 @@ export default function ChatPage() {
   const [sessions, setSessions] = useState([])
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [messages, setMessages] = useState([])
+  const [placeholder, setPlaceholder] = useState(() => {
+    const cached = localStorage.getItem('rag_chat_config')
+    if (cached) {
+      try {
+        const data = JSON.parse(cached)
+        const match = data.persona?.match(/especializado en ([^.]+)/i)
+        if (match && match[1]) return `Escribe tu consulta sobre ${match[1].trim().toLowerCase()}...`
+      } catch (e) { console.warn("Error parsing cached config", e) }
+    }
+    return 'Escribe tu consulta...'
+  })
+
+  const [chatTitle, setChatTitle] = useState(() => {
+    const cached = localStorage.getItem('rag_chat_config')
+    if (cached) {
+      try {
+        const data = JSON.parse(cached)
+        const match = data.persona?.match(/especializado en ([^.]+)/i)
+        if (match && match[1]) return `Asistente Inteligente de ${match[1].trim()}`
+      } catch (e) { console.warn("Error parsing cached config", e) }
+    }
+    return 'Asistente RAGulator'
+  })
+
   const [isLoadingSessions, setIsLoadingSessions] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false)
+  const [sourceFontSize, setSourceFontSize] = useState(16)
+
+  // Caching: Only fetch if not in localStorage
+  useEffect(() => {
+    const cached = localStorage.getItem('rag_chat_config')
+    if (cached) return // Skip fetch if already cached
+
+    authFetch(instance, getApiUrl('/api/chat/config'))
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.persona) {
+          localStorage.setItem('rag_chat_config', JSON.stringify(data))
+          const match = data.persona.match(/especializado en ([^.]+)/i)
+          if (match && match[1]) {
+            const specialty = match[1].trim()
+            setPlaceholder(`Escribe tu consulta sobre ${specialty.toLowerCase()}...`)
+            setChatTitle(`Asistente Inteligente de ${specialty}`)
+          } else {
+            setPlaceholder('Escribe tu consulta al asistente RAG...')
+            setChatTitle('Asistente Inteligente RAGulator')
+          }
+        }
+      })
+      .catch(err => {
+        console.warn("No se pudo cargar la configuración del chat, usando valores genéricos", err)
+        setPlaceholder('Escribe tu consulta sobre comercio internacional...')
+        setChatTitle('Asistente Inteligente de Comercio Internacional')
+      })
+  }, [instance])
 
   // Load sessions from Cosmos DB on mount
   useEffect(() => {
@@ -234,7 +288,13 @@ export default function ChatPage() {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('rag_chat_config')
+    instance.logoutRedirect().catch(e => console.error(e))
+  }
+
   return (
+    <>
     <div className="chat-layout">
       {/* Left Sidebar — Chat History */}
       <aside className="chat-sidebar">
@@ -245,7 +305,8 @@ export default function ChatPage() {
           </div>
           <button 
             onClick={handleNewChat}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--primary)', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
+            className="chat-sidebar__new-chat"
+            title="Iniciar un nuevo hilo de conversación"
           >
             <Plus size={14} />
             Nuevo Chat
@@ -292,7 +353,7 @@ export default function ChatPage() {
         {/* Header */}
         <header className="chat-header">
           <div className="chat-header__left">
-            <h1 className="chat-header__title">Asistente Inteligente de Comercio Internacional</h1>
+            <h1 className="chat-header__title">{chatTitle}</h1>
             <span className="badge badge-success">
               <Shield size={12} />
               Gobernado y Trazable
@@ -311,7 +372,7 @@ export default function ChatPage() {
               </button>
             )}
             <button
-              onClick={() => { instance.logoutRedirect().catch(e => console.error(e)); }}
+              onClick={handleLogout}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239, 68, 68, 0.05)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '10px 18px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.15s' }}
               onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -358,7 +419,7 @@ export default function ChatPage() {
             <input
               type="text"
               className="chat-input"
-              placeholder="Escribe tu consulta sobre comercio internacional..."
+              placeholder={placeholder}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -400,6 +461,13 @@ export default function ChatPage() {
               <ExternalLink size={13} />
               Ver documento original (PDF)
             </a>
+            <button 
+              className="chat-sources__expand-btn"
+              onClick={() => setIsSourceModalOpen(true)}
+            >
+              <ZoomIn size={13} />
+              Ampliar Fragmento
+            </button>
           </div>
         )}
 
@@ -434,5 +502,51 @@ export default function ChatPage() {
         </div>
       </aside>
     </div>
+    
+      {/* Source Modal */}
+      {isSourceModalOpen && activeCitation && (
+        <div className="source-modal-overlay animate-fade-in" onClick={() => setIsSourceModalOpen(false)}>
+          <div className="source-modal-card glass" onClick={e => e.stopPropagation()}>
+            <div className="source-modal-header">
+              <div className="source-modal-title">
+                <Search size={18} />
+                <span>Detalle de Fuente</span>
+              </div>
+              <div className="source-modal-controls">
+                <button 
+                  className="font-btn" 
+                  onClick={() => setSourceFontSize(prev => Math.max(12, prev - 2))}
+                  title="Reducir fuente"
+                >
+                  <span style={{fontSize: '12px'}}>a-</span>
+                </button>
+                <div className="font-indicator">{sourceFontSize}px</div>
+                <button 
+                  className="font-btn" 
+                  onClick={() => setSourceFontSize(prev => Math.min(32, prev + 2))}
+                  title="Aumentar fuente"
+                >
+                  <span style={{fontSize: '16px'}}>A+</span>
+                </button>
+                <div className="source-modal-divider" />
+                <button className="source-modal-close" onClick={() => setIsSourceModalOpen(false)}>
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="source-modal-content">
+              <div className="source-modal-badge">{activeCitation.title}</div>
+              <div className="source-modal-source">{activeCitation.source}</div>
+              <div 
+                className="source-modal-text" 
+                style={{ fontSize: `${sourceFontSize}px` }}
+              >
+                {activeCitation.text}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

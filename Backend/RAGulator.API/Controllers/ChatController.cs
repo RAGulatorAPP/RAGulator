@@ -8,9 +8,21 @@ namespace RAGulator.API.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class ChatController(FoundryChatService chatService, ChatHistoryService historyService) : ControllerBase
+public class ChatController(
+    FoundryChatService chatService, 
+    ChatHistoryService historyService,
+    ISystemConfigurationService configService) : ControllerBase
 {
     private string GetUserId() => User.FindFirst("sub")?.Value ?? User.FindFirst("oid")?.Value ?? "anonymous";
+
+    [HttpGet("config")]
+    public async Task<IActionResult> GetChatConfig()
+    {
+        var config = await configService.GetConfigurationAsync();
+        return Ok(new {
+            persona = config.SystemPersona
+        });
+    }
 
     // =====================================================
     // SESSIONS — CRUD de sesiones de chat

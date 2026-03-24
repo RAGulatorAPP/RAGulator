@@ -13,6 +13,7 @@ export default function UserSection({ showChatLink = false, showAdminLink = fals
   const isAdmin = roles.includes('Admin')
 
   const handleLogout = () => {
+    localStorage.removeItem('rag_chat_config')
     instance.logoutRedirect().catch(e => console.error(e));
   }
 
