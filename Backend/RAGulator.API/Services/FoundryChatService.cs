@@ -97,15 +97,19 @@ public class FoundryChatService
 
         // 1. (RAG) Retrieval: Recuperamos contexto de Azure AI Search (texto y citas mapeadas)
         var (relevantContext, citations) = await _searchService.GetRelevantContextAsync(request.Message);
+        var systemConfig = await _configService.GetConfigurationAsync();
         
         string groundingPrompt = string.IsNullOrEmpty(relevantContext) 
-            ? "Por ahora, no tienes acceso a la base de documentos locales, así que basa tus respuestas en tu conocimiento general." 
+            ? (systemConfig.AllowInternetSearch 
+                ? "Por ahora, no tienes acceso a la base de documentos locales, así que basa tus respuestas en tu conocimiento general." 
+                : "No tienes acceso a la base de documentos locales y la búsqueda externa está DESACTIVADA. Indica que no puedes ayudar con información específica por ahora.")
             : $"A continuación se proporcionan fragmentos de documentos corporativos numerados como [Fuente - 1], [Fuente - 2], etc.\n" +
               $"Basarás tu respuesta PRIMORDIALMENTE en este contexto. Cuando uses información del contexto, DEBES incluir el número de fuente entre corchetes al final de la frase (por ejemplo, [1] o [2]).\n" +
-              $"Si la respuesta exacta no está en el contexto proporcionado, responde usando tu conocimiento general, pero incluye obligatoriamente una advertencia sutil diciendo algo como: 'Basado en mi conocimiento general (no aparece en los documentos cargados)...'\n\n" + 
+              (systemConfig.AllowInternetSearch 
+                ? "Si la respuesta exacta no está en el contexto proporcionado, responde usando tu conocimiento general, pero incluye obligatoriamente una advertencia sutil diciendo algo como: 'Basado en mi conocimiento general (no aparece en los documentos cargados)...'\n\n"
+                : "Si la respuesta exacta no está en el contexto proporcionado, DEBES indicar que no se encontró información en los documentos institucionales y te abstendrás de usar conocimiento externo o especular.\n\n") + 
               $"CONTEXTO OBTENIDO:\n{relevantContext}";
 
-        var systemConfig = await _configService.GetConfigurationAsync();
         string finalSystemPrompt = $"{systemConfig.SystemPersona}\n\n" +
                                    $"DIRECTRICES DE RESPUESTA:\n{systemConfig.ResponseGuidelines}\n\n" +
                                    $"POLÍTICAS CORPORATIVAS:\n{systemConfig.CompanyPolicies}\n\n" +
@@ -114,6 +118,7 @@ public class FoundryChatService
         var chatOptions = new ChatCompletionsOptions
         {
             Model = _deploymentName,
+            Temperature = (float)systemConfig.Temperature,
             Messages =
             {
                 new ChatRequestSystemMessage(finalSystemPrompt),

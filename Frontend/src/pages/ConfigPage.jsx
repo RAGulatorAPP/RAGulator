@@ -11,7 +11,9 @@ export default function ConfigPage() {
   const [config, setConfig] = useState({
     systemPersona: '',
     responseGuidelines: '',
-    companyPolicies: ''
+    companyPolicies: '',
+    temperature: 0.7,
+    allowInternetSearch: true
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -25,12 +27,14 @@ export default function ConfigPage() {
          setConfig({
            systemPersona: json.systemPersona || '',
            responseGuidelines: json.responseGuidelines || '',
-           companyPolicies: json.companyPolicies || ''
+           companyPolicies: json.companyPolicies || '',
+           temperature: json.temperature ?? 0.7,
+           allowInternetSearch: json.allowInternetSearch ?? true
          });
       })
       .catch(err => console.error("Error al cargar config", err))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [instance]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -52,6 +56,7 @@ export default function ConfigPage() {
       setIsSaving(false);
     }
   };
+
 
   return (
     <div className="admin-page">
@@ -123,7 +128,7 @@ export default function ConfigPage() {
             <textarea 
               value={config.responseGuidelines}
               onChange={(e) => setConfig({...config, responseGuidelines: e.target.value})}
-              rows={4}
+              rows={3}
               placeholder="Ej: Responde siempre en viñetas. Usa tono formal y asertivo. Cita las fuentes."
             />
           </div>
@@ -143,9 +148,77 @@ export default function ConfigPage() {
             <textarea 
               value={config.companyPolicies}
               onChange={(e) => setConfig({...config, companyPolicies: e.target.value})}
-              rows={4}
+              rows={3}
               placeholder="Ej: Bajo NINGUNA circunstancia recomiendes inversión. Si no sabes, responde 'No me consta en el manual'."
             />
+          </div>
+
+          {/* Card 4: Temperature */}
+          <div className="config-card">
+            <div className="config-card__header">
+              <div className="config-card__number">4</div>
+              <div>
+                <div className="config-card__label">
+                  Nivel de Creatividad (Temperature)
+                </div>
+                <div className="config-card__sublabel">Valores bajos son más deterministas; valores altos son más creativos.</div>
+              </div>
+            </div>
+            <div className="config-card__input-group">
+              <div className="config-card__row">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="1" 
+                  step="0.1" 
+                  value={config.temperature}
+                  onChange={(e) => setConfig({...config, temperature: parseFloat(e.target.value)})}
+                  className="config-card__range"
+                />
+                <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap: '4px'}}>
+                  <span className="config-card__value-display">{config.temperature.toFixed(1)}</span>
+                </div>
+              </div>
+              <div className="config-card__legend">
+                {['Preciso (Recomendado)', 'Equilibrado', 'Creativo / Experimental'].map((label, idx) => {
+                  const isActive = (idx === 0 && config.temperature <= 0.3) || 
+                                   (idx === 1 && config.temperature > 0.3 && config.temperature <= 0.7) ||
+                                   (idx === 2 && config.temperature > 0.7);
+                  const colors = ['#10b981', '#f59e0b', '#ef4444'];
+                  return (
+                    <span 
+                      key={label}
+                      className={`config-card__legend-item ${isActive ? 'config-card__legend-item--active' : ''}`}
+                      style={{color: colors[idx]}}
+                    >
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Internet Search */}
+          <div className="config-card">
+            <div className="config-card__header">
+              <div className="config-card__number">5</div>
+              <div style={{flex: 1}}>
+                <div className="config-card__label">
+                  Permitir Búsqueda Fuera del RAG (Web)
+                </div>
+                <div className="config-card__sublabel">Si se desactiva, el agente sólo responderá basándose en los documentos cargados.</div>
+              </div>
+              <label className="config-card__toggle-wrapper">
+                <input 
+                  type="checkbox" 
+                  checked={config.allowInternetSearch}
+                  onChange={(e) => setConfig({...config, allowInternetSearch: e.target.checked})}
+                  className="config-card__toggle-input"
+                />
+                <span className="config-card__toggle-slider"></span>
+              </label>
+            </div>
           </div>
 
           {/* Actions */}
