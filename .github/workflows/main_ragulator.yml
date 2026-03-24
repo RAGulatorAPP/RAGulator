@@ -27,13 +27,13 @@ jobs:
         run: dotnet build Backend/RAGulator.API/RAGulator.API.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish Backend/RAGulator.API/RAGulator.API.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish Backend/RAGulator.API/RAGulator.API.csproj -c Release -o ./publish-output
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ./publish-output
 
   deploy:
     runs-on: ubuntu-latest
