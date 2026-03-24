@@ -9,6 +9,8 @@ import { loginRequest } from '../authConfig'
 import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import UserSection from '../components/UserSection'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './ChatPage.css'
 
 export default function ChatPage() {
@@ -68,25 +70,52 @@ export default function ChatPage() {
 
   const renderMessageWithCitations = (messageObj) => {
     if (!messageObj.content) return null
-    if (!messageObj.citations || messageObj.citations.length === 0) return <span>{messageObj.content}</span>
+    
+    // Si no hay citaciones, solo renderizamos Markdown normal
+    if (!messageObj.citations || messageObj.citations.length === 0) {
+      return (
+        <div className="markdown-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {messageObj.content}
+          </ReactMarkdown>
+        </div>
+      )
+    }
 
-    return messageObj.content.split(/(\[\d+\])/).map((part, i) => {
-      const match = part.match(/\[(\d+)\]/)
-      if (match) {
-        const citNum = parseInt(match[1])
-        const citation = messageObj.citations.find(c => c.id === citNum)
-        return (
-          <sup
-            key={i}
-            className="chat-citation-ref"
-            onClick={() => citation && setActiveCitation(citation)}
-          >
-            [{citNum}]
-          </sup>
-        )
-      }
-      return <span key={i}>{part}</span>
-    })
+    // Pre-procesar el contenido para convertir [n] en links especiales [ [n] ](#cite-n)
+    // Esto permite que ReactMarkdown lo reconozca y podamos personalizarlo
+    const processedContent = messageObj.content.replace(/\[(\d+)\]/g, '[[ $1 ]](#cite-$1)')
+
+    return (
+      <div className="markdown-content">
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm]} 
+          components={{
+            a: ({ ...props }) => {
+              const isCitation = props.href?.startsWith('#cite-')
+              if (isCitation) {
+                const citNum = parseInt(props.href.replace('#cite-', ''))
+                const citation = messageObj.citations.find(c => c.id === citNum)
+                return (
+                  <sup
+                    className="chat-citation-ref"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (citation) setActiveCitation(citation)
+                    }}
+                  >
+                    [{citNum}]
+                  </sup>
+                )
+              }
+              return <a {...props} target="_blank" rel="noreferrer">{props.children}</a>
+            }
+          }}
+        >
+          {processedContent}
+        </ReactMarkdown>
+      </div>
+    )
   }
 
   const handleSendMessage = async () => {
