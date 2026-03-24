@@ -2,44 +2,36 @@
 
 > **"Transforma la incertidumbre en confianza absoluta."**
 
-Sistema RAG (Retrieval-Augmented Generation) gobernado y trazable para comercio internacional de importación/exportación. Permite a equipos regulados consultar sobre productos/servicios y obtener respuestas instantáneas respaldadas **exclusivamente** por documentos internos reales, con citas exactas obligatorias.
+Sistema **Governed RAG (Retrieval-Augmented Generation)** de grado empresarial para el sector de Comercio Internacional. RAGulator permite a los equipos de importación y exportación consultar normativas, aranceles y procesos complejos, obteniendo respuestas precisas respaldadas por documentos corporativos reales con **citas bibliográficas verificables y trazabilidad completa**.
 
 ---
 
-## 📸 Vista Previa
+## 📸 Funcionalidades Clave
 
-| Interfaz de Usuario | Panel de Administración |
-|---|---|
-| Chat con citas bibliográficas y Groundedness Score | KPIs, gráficos de evaluación y alertas |
+- **Chat Inteligente RAG**: Generación de respuestas basadas exclusivamente en la base de conocimientos interna.
+- **Citas de Fuente Exactas**: Cada afirmación incluye una referencia al parrafo y documento original.
+- **Groundedness Scoring**: Evaluación en tiempo real de la fidelidad de la respuesta frente a la fuente.
+- **Panel de Gobernanza**: Control total sobre la ingesta de documentos, métricas de calidad y alertas de seguridad.
+- **Content Safety Integrado**: Filtros automáticos contra lenguaje inapropiado y fuga de información sensible.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## 🏗️ Arquitectura de Producción (Azure Native)
 
-```
-Query → Content Safety (entrada) → Retrieval + Re-ranking (AI Search)
-      → Prompt + Contexto → Generación (OpenAI)
-      → Evaluación Integral (citas + groundedness)
-      → Content Safety (salida) → Respuesta Validada con Citas
-```
+RAGulator ha sido diseñado para escalar y operar de forma segura en la nube de Microsoft, utilizando un stack 100% nativo de Azure:
 
-### Stack Tecnológico (Ecosistema Azure)
-
-| Categoría | Servicio |
-|---|---|
-| **Alojamiento** | Azure App Service |
-| **Base de datos** | Azure Cosmos DB |
-| **Almacenamiento** | Azure Blob Storage |
-| **Extracción de texto** | Azure AI Document Intelligence |
-| **Búsqueda híbrida + Vectores** | Azure AI Search |
-| **LLM principal** | Azure OpenAI (GPT-4o) |
-| **Orquestación RAG** | Azure AI Studio / Prompt Flow |
-| **Autenticación** | Microsoft Entra ID (RBAC) |
-| **Seguridad de contenido** | Azure AI Content Safety |
-| **Secretos** | Azure Key Vault |
-| **Observabilidad** | Azure Monitor / Application Insights |
-| **Reportes** | Power BI |
-
+| Componente | Servicio Azure | Propósito |
+|---|---|---|
+| **Frontend** | Azure Static Web Apps | Aplicación React 19 de alto rendimiento. |
+| **Backend API** | Azure App Service | Microservicio en .NET 10 con orquestación de IA. |
+| **Base de Datos** | Azure Cosmos DB | Persistencia global de sesiones, chats y auditoría. |
+| **Motor de Búsqueda** | Azure AI Search | Indexación vectorial e híbrida para Retrieval de precisión. |
+| **Motor de IA** | Azure OpenAI (GPT-4o) | Generación de lenguaje natural y razonamiento complejo. |
+| **Ingesta de Docs** | AI Document Intelligence | Extracción de texto y estructura de PDFs complejos. |
+| **Almacenamiento** | Azure Blob Storage | Repositorio seguro para archivos fuente originales. |
+| **Identidad** | Microsoft Entra ID | Autenticación y RBAC (Control de Acceso Basado en Roles). |
+| **Seguridad de IA** | Azure AI Content Safety | Auditoría y bloqueo de prompts/respuestas inseguras. |
+| **Secretos** | Azure Key Vault | Gestión 
 ---
 
 ## 📁 Estructura del Proyecto
@@ -49,107 +41,63 @@ RAGulator/
 ├── Frontend/                  # React 19 + Vite 8
 │   ├── src/
 │   │   ├── pages/
-│   │   │   ├── ChatPage.jsx          # Interfaz de chat con citas
-│   │   │   ├── AdminDashboard.jsx    # KPIs y métricas
-│   │   │   ├── DocumentsPage.jsx     # Gestión de documentos
-│   │   │   ├── QualityPage.jsx       # Calidad RAG
-│   │   │   ├── SecurityPage.jsx      # Seguridad y Content Safety
-│   │   │   ├── AuditPage.jsx         # Auditoría y trazabilidad
-│   │   │   ├── UsersPage.jsx         # Usuarios & Roles
-│   │   │   └── ConfigPage.jsx        # Configuración
-│   │   ├── components/
-│   │   │   ├── AdminLayout.jsx       # Layout con sidebar
-│   │   │   └── AdminSidebar.jsx      # Navegación admin
-│   │   ├── data/
-│   │   │   └── mockData.js           # Datos de demostración
-│   │   ├── App.jsx                   # Router principal
-│   │   └── index.css                 # Design system (tokens CSS)
-│   └── package.json
+│   │   │   ├── ChatPage.jsx          # Interfaz de chat con citas y fuentes
+│   │   │   ├── AdminDashboard.jsx    # KPIs estratégicos y telemetría
+│   │   │   ├── DocumentsPage.jsx     # Gestión del ciclo de vida de documentos
+│   │   │   ├── QualityPage.jsx       # Métricas RAG (Coherencia, Relevancia)
+│   │   │   ├── SecurityPage.jsx      # Monitor de Content Safety
+│   │   │   ├── AuditPage.jsx         # Trazabilidad y auditoría de logs
+│   │   │   └── UsersPage.jsx         # Gestión de acceso y roles
+│   │   └── index.css                 # Sistema de diseño premium
 │
-└── Backend/                   # .NET 10 Web API
+└── Backend/                   # .NET 10 (C#)
     └── RAGulator.API/
-        ├── Controllers/
-        │   ├── ChatController.cs
-        │   ├── DashboardController.cs
-        │   ├── DocumentsController.cs
-        │   └── QualityController.cs
-        ├── Models/
-        │   └── Models.cs
-        ├── Services/
-        │   └── MockDataService.cs
-        └── Program.cs
+        ├── Controllers/       # Endpoints REST protegidos por Entra ID
+        ├── Services/          # Lógica de negocio, RAG Pipeline y Telemetría
+        └── Configuration/     # Modelos de configuración de Azure Services
 ```
 
 ---
 
-## 🚀 Cómo Ejecutar
+## 🚀 Despliegue y Configuración
 
-### Prerrequisitos
+### 1. Variables de Entorno (Producción)
+Para operar en Azure, el App Service requiere las siguientes configuraciones clave:
+- `CosmosDB__ConnectionString`: Persistencia de sesiones y telemetría.
+- `AzureAIFoundry__Endpoint` & `ApiKey`: Orquestación del modelo GPT-4o.
+- `AzureAISearch__Endpoint` & `ApiKey`: Recuperación de documentos relevantes.
+- `AzureAd__TenantId` & `ClientId`: Autenticación corporativa segura.
 
-- [Node.js 18+](https://nodejs.org/)
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-
-### Frontend (React)
-
+### 2. Ejecución Local (Desarrollo)
 ```bash
-cd Frontend
-npm install
-npm run dev
+# Frontend
+cd Frontend && npm install && npm run dev
+
+# Backend
+cd Backend/RAGulator.API && dotnet build && dotnet run
 ```
-
-→ Disponible en **http://localhost:5173**
-
-### Backend (.NET 10)
-
-```bash
-cd Backend/RAGulator.API
-dotnet run
-```
-
-→ API disponible en **http://localhost:5000**
 
 ---
 
-## 🗺️ Páginas y Rutas
+## 📡 Capacidades de la API
 
-| Ruta | Vista | Descripción |
-|---|---|---|
-| `/` | Chat | Interfaz de usuario con historial, citas y Groundedness |
-| `/admin` | Dashboard | KPIs, gráfico de evaluación, alertas recientes |
-| `/admin/documents` | Documentos | Índice de documentos en Azure Blob Storage |
-| `/admin/quality` | Calidad RAG | Métricas de evaluación continua y radar chart |
-| `/admin/security` | Seguridad | Content Safety y políticas |
-| `/admin/audit` | Auditoría | Trazabilidad de consultas |
-| `/admin/users` | Usuarios | RBAC con Microsoft Entra ID |
-| `/admin/settings` | Configuración | Parámetros del pipeline RAG |
-
----
-
-## 📡 API Endpoints (Backend Mock)
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/api/chat/history` | Historial de conversaciones |
-| `GET` | `/api/chat/messages/{id}` | Mensajes de una conversación |
-| `POST` | `/api/chat/message` | Enviar consulta al pipeline RAG |
-| `GET` | `/api/dashboard` | Métricas del dashboard |
-| `GET` | `/api/documents` | Lista de documentos ingestados |
-| `POST` | `/api/documents/upload` | Subir nuevo documento |
-| `GET` | `/api/quality` | Métricas de calidad RAG |
+| Endpoint | Descripción |
+|---|---|
+| `POST /api/chat/message` | Envía un prompt al pipeline RAG, ejecuta búsqueda y genera respuesta con citas. |
+| `GET /api/chat/sessions` | Recupera el historial de chat persistido en Cosmos DB. |
+| `POST /api/documents/upload` | Ingesta documentos: los analiza con Doc Intelligence y los indexa en AI Search. |
+| `GET /api/quality/metrics` | Obtiene el radar chart de las métricas de calidad RAG (Groundedness, Recall, etc). |
 
 ---
 
 ## 🎨 Design System
-
-Tema oscuro premium con:
-- **Colores**: Dark navy (`#0a0e1a`) + Teal/Cyan (`#00d4aa`, `#06b6d4`)
-- **Tipografía**: Inter (Google Fonts)
-- **Efectos**: Glassmorphism, gradientes, micro-animaciones CSS
-- **Gráficos**: Recharts (AreaChart, LineChart, RadarChart)
-- **Iconos**: Lucide React
+RAGulator utiliza una estética **Premium Dark Mode** diseñada para entornos de decisión:
+- **Navy Deep**: `#0a0e1a` para la base estructural.
+- **Teal / Cyan High-Contrast**: Para acentos de IA y visualización de datos.
+- **Glassmorphism**: Efectos de transparencia en capas para una sensación de profundidad.
+- **Gráficos Dinámicos**: Integración con Recharts para visualización de telemetría en tiempo real.
 
 ---
 
-## 📝 Notas
-
-> Este proyecto es un **mockup funcional** con datos de demostración. Para conectar con los servicios reales de Azure, es necesario configurar las credenciales correspondientes en las variables de entorno del backend.
+## 🏆 Objetivo del Proyecto
+RAGulator no es solo un chat; es una herramienta de **Gobernanza de IA**. Asegura que el modelo no alucine ("Hallucination-free") forzándolo a utilizar únicamente fuentes oficiales cargadas por el administrador, reportando cada interacción a una bitácora de auditoría inmutable en Azure para cumplimiento normativo total.

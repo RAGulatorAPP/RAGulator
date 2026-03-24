@@ -1,5 +1,5 @@
-using Azure;
-using Azure.AI.Inference;
+using OpenAI.Chat;
+using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using RAGulator.API.Configuration;
@@ -10,7 +10,7 @@ namespace RAGulator.API.Services;
 
 public class FoundryChatService
 {
-    private readonly ChatCompletionsClient _projectClient;
+    private readonly ChatClient _chatClient;
     private readonly string _deploymentName;
     private readonly SearchService _searchService;
     private readonly ITelemetryService _telemetryService;
@@ -34,25 +34,28 @@ public class FoundryChatService
             _contentSafetyClient = new ContentSafetyClient(new Uri(safetyConfig.Value.Endpoint), new AzureKeyCredential(safetyConfig.Value.ApiKey));
         }
 
-        _deploymentName = string.IsNullOrWhiteSpace(foundryConfig.DeploymentName) ? "gpt-5.4-mini" : foundryConfig.DeploymentName;
+        _deploymentName = string.IsNullOrWhiteSpace(foundryConfig.DeploymentName) ? "gpt-4o" : foundryConfig.DeploymentName;
         
         if (string.IsNullOrWhiteSpace(foundryConfig.Endpoint))
         {
             throw new InvalidOperationException("Falta la configuración de Endpoint para Azure AI Foundry.");
         }
 
+        AzureOpenAIClient azureClient;
         if (!string.IsNullOrWhiteSpace(foundryConfig.ApiKey))
         {
-            _projectClient = new ChatCompletionsClient(
+            azureClient = new AzureOpenAIClient(
                 new Uri(foundryConfig.Endpoint), 
                 new AzureKeyCredential(foundryConfig.ApiKey));
         }
         else
         {
-            _projectClient = new ChatCompletionsClient(
+            azureClient = new AzureOpenAIClient(
                 new Uri(foundryConfig.Endpoint), 
                 new DefaultAzureCredential());
         }
+
+        _chatClient = azureClient.GetChatClient(_deploymentName);
     }
 
     public async Task<SendMessageResponse> ProcessMessageAsync(SendMessageRequest request)
@@ -111,46 +114,26 @@ public class FoundryChatService
                                    $"POLÍTICAS CORPORATIVAS:\n{systemConfig.CompanyPolicies}\n\n" +
                                    groundingPrompt;
 
-        var chatOptions = new ChatCompletionsOptions
+        var messages = new List<ChatMessage>
         {
-            Model = _deploymentName,
-            Messages =
-            {
-                new ChatRequestSystemMessage(finalSystemPrompt),
-                new ChatRequestUserMessage(request.Message)
-            }
+            new SystemChatMessage(finalSystemPrompt),
+            new UserChatMessage(request.Message)
         };
 
-        Response<ChatCompletions>? response = null;
+        ChatCompletion? response = null;
         try 
         {
             sw.Restart();
-            response = await _projectClient.CompleteAsync(chatOptions);
+            response = await _chatClient.CompleteChatAsync(messages);
             sw.Stop();
         } 
-        catch (RequestFailedException ex) when (ex.ErrorCode == "content_filter")
-        {
-            _ = _telemetryService.LogInteractionAsync(new RAGulator.API.Models.Telemetry.ChatInteractionTelemetry {
-                 ResponseTimeMs = sw.ElapsedMilliseconds,
-                 HasContentSafetyAlert = true,
-                 SafetyAlertCategory = "AzureOpenAIBuiltInFilter (Hate/Violence)",
-                 SafetyAlertSeverity = 6,
-                 UserPrompt = request.Message,
-                 AiResponse = "🔒 Mensaje bloqueado nativamente por Azure OpenAI."
-            });
-            
-            return new SendMessageResponse(
-                new ChatMessage(DateTime.UtcNow.Millisecond, "user", request.Message),
-                new ChatMessage(DateTime.UtcNow.Millisecond + 1, "assistant", "🔒 Mensaje bloqueado por Gobernanza RAG. El filtro maestro integrado de Azure OpenAI rechazó categóricamente este prompt.", new List<Citation>(), 0)
-            );
-        }
         catch (Exception ex)
         {
-            Console.WriteLine($"[FoundryChatService] AI Request Failed: {ex.Message}");
-            throw; // Rethrow to let the controller handle it but with more context in the console
+            Console.WriteLine($"[FoundryChatService] AI Request Failed (OpenAI SDK): {ex.Message}");
+            throw;
         }
 
-        var replyContent = response.Value.Content;
+        string replyContent = response.Content[0].Text;
         
         // Simulación de Groundedness dinámico usando un umbral alto y ligera variación pseudo-aleatoria.
         // En producción real, esto se calcula dinámicamente usando Azure Content Safety y Azure AI Evaluation.
