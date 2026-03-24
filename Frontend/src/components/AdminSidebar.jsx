@@ -1,22 +1,21 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, ShieldCheck, Activity, Users, Settings,
-  Lock, ArrowLeft, Sparkles
+  Lock, Sparkles
 } from 'lucide-react'
+import UserSection from './UserSection'
 import './AdminSidebar.css'
 
 import { useMsal } from '@azure/msal-react'
+import { authFetch, getApiUrl } from '../authFetch'
 
 export default function AdminSidebar() {
-  const navigate = useNavigate()
   const { instance, accounts } = useMsal()
   
   const account = accounts[0] || instance.getActiveAccount()
   const roles = account?.idTokenClaims?.roles || []
   const isAdmin = roles.includes('Admin')
-  
-  const username = account?.name || 'Usuario Padrón'
-  const useremail = account?.username || 'usuario@empresa.com'
 
   const adminNav = [
     { label: 'ADMINISTRACIÓN', type: 'section', adminOnly: false },
@@ -30,9 +29,28 @@ export default function AdminSidebar() {
     { to: '/admin/settings', icon: Settings, label: 'Configuración', adminOnly: true },
   ]
 
-  const handleLogout = () => {
-    instance.logoutRedirect().catch(e => console.error(e));
-  }
+
+  const [systemInfo, setSystemInfo] = useState({
+    projectName: 'Cargando...',
+    region: '...',
+    model: '...'
+  })
+
+  useEffect(() => {
+    authFetch(instance, getApiUrl('/api/dashboard/system-info'))
+      .then(res => res.json())
+      .then(data => {
+        setSystemInfo(data)
+      })
+      .catch(err => {
+        console.error('Error fetching system info:', err)
+        setSystemInfo({
+          projectName: 'az-rag-governance',
+          region: 'East US 2',
+          model: 'GPT-4o'
+        })
+      })
+  }, [instance])
 
   return (
     <aside className="admin-sidebar">
@@ -48,8 +66,8 @@ export default function AdminSidebar() {
           </div>
         </div>
         <div className="admin-sidebar__resource-tag">
-          <span className="resource-tag__name">az-rag-governance</span>
-          <span className="resource-tag__info">East US 2 · GPT-4o</span>
+          <span className="resource-tag__name">{systemInfo.projectName}</span>
+          <span className="resource-tag__info">{systemInfo.region} · {systemInfo.model}</span>
         </div>
       </div>
 
@@ -81,27 +99,7 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="admin-sidebar__footer">
-        <div className="admin-sidebar__user">
-          <div className="admin-sidebar__avatar">{username.charAt(0)}</div>
-          <div style={{overflow: 'hidden'}}>
-            <div className="admin-sidebar__user-email" style={{textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{useremail}</div>
-            <div className="admin-sidebar__user-role">{isAdmin ? 'Administrador Superior' : 'Asesor Aduanero (Base)'}</div>
-          </div>
-        </div>
-        
-        <div style={{display: 'flex', gap: '8px', marginTop: '16px'}}>
-            <button className="admin-sidebar__back-btn" style={{flex: 1}} onClick={() => navigate('/')}>
-              <ArrowLeft size={16} />
-              <span>Chat</span>
-            </button>
-            <button className="admin-sidebar__back-btn" style={{flex: 1, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)'}} onClick={handleLogout}>
-              <Lock size={16} />
-              <span>Cerrar Sesión</span>
-            </button>
-        </div>
-      </div>
+      <UserSection showChatLink={true} showLogout={false} />
     </aside>
   )
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using RAGulator.API.Models;
+using Microsoft.Extensions.Options;
+using RAGulator.API.Configuration;
 using RAGulator.API.Services;
 
 namespace RAGulator.API.Controllers;
@@ -8,7 +9,10 @@ namespace RAGulator.API.Controllers;
 [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/[controller]")]
-public class DashboardController(ITelemetryService telemetryService, DocumentIngestionService ingestionService) : ControllerBase
+public class DashboardController(
+    ITelemetryService telemetryService, 
+    DocumentIngestionService ingestionService,
+    IOptions<AzureAIFoundryConfig> foundryConfig) : ControllerBase
 {
     [HttpGet("metrics")]
     public async Task<IActionResult> GetDashboardMetrics()
@@ -22,6 +26,17 @@ public class DashboardController(ITelemetryService telemetryService, DocumentIng
             metrics = snapshot,
             lineChart = groundHistory,
             alerts = recentAlerts
+        });
+    }
+
+    [HttpGet("system-info")]
+    public IActionResult GetSystemInfo()
+    {
+        var config = foundryConfig.Value;
+        return Ok(new {
+            projectName = config.ProjectName,
+            region = config.Region,
+            model = config.DeploymentName
         });
     }
 }

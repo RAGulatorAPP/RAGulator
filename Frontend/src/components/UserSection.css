@@ -1,0 +1,102 @@
+.user-section {
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.user-section__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.user-section__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.user-section__info {
+  overflow: hidden;
+}
+
+.user-section__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.user-section__role {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.user-section__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-section__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  width: 100%;
+  font-family: inherit;
+}
+
+.user-section__btn--admin {
+  background: rgba(59, 130, 246, 0.08); /* Indigo/Blue accent */
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+.user-section__btn--admin:hover {
+  background: rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.user-section__btn--alt {
+  background: rgba(0, 212, 170, 0.08);
+  color: var(--accent-primary);
+  border-color: rgba(0, 212, 170, 0.15);
+}
+
+.user-section__btn--alt:hover {
+  background: rgba(0, 212, 170, 0.15);
+  transform: translateY(-1px);
+}
+
+.user-section__btn--logout {
+  background: rgba(239, 68, 68, 0.05);
+  color: rgba(239, 68, 68, 0.8);
+  border-color: rgba(239, 68, 68, 0.12);
+}
+
+.user-section__btn--logout:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  transform: translateY(-1px);
+}
+
+.user-section__btn:active {
+  transform: translateY(0);
+}

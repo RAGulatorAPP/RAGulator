@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import AdminTopBar from '../components/AdminTopBar'
 import { ClipboardList, Zap, ChevronDown, ChevronUp, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { authFetch, getApiUrl } from '../authFetch'
@@ -38,17 +39,7 @@ export default function AuditPage() {
 
   return (
     <div className="admin-page">
-      <div className="admin-page__topbar">
-        <div className="admin-page__breadcrumb">
-          <span className="admin-page__breadcrumb-parent">Admin</span>
-          <span className="admin-page__breadcrumb-sep">›</span>
-          <span className="admin-page__breadcrumb-current">Auditoría & Trazabilidad</span>
-        </div>
-        <div className="admin-page__topbar-right">
-          <Zap size={14} className="topbar-icon--connected" />
-          <span className="topbar-status">Azure Cosmos DB Online</span>
-        </div>
-      </div>
+      <AdminTopBar pageTitle="Auditoría & Trazabilidad" statusText="Azure Cosmos DB Online" />
       
       <div className="admin-page__content" style={{padding: '24px'}}>
         <div style={{display: 'flex', alignItems: 'center', marginBottom: '24px'}}>

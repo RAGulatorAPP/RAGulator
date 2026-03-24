@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import AdminTopBar from '../components/AdminTopBar'
 import { Settings, Zap, Save, CheckCircle2, Brain, FileText, ShieldAlert } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { authFetch, getApiUrl } from '../authFetch'
@@ -60,17 +61,7 @@ export default function ConfigPage() {
 
   return (
     <div className="admin-page">
-      <div className="admin-page__topbar">
-        <div className="admin-page__breadcrumb">
-          <span className="admin-page__breadcrumb-parent">Admin</span>
-          <span className="admin-page__breadcrumb-sep">›</span>
-          <span className="admin-page__breadcrumb-current">Configuración Maestra</span>
-        </div>
-        <div className="admin-page__topbar-right">
-          <Zap size={14} className="topbar-icon--connected" />
-          <span className="topbar-status">Azure Cosmos DB Online</span>
-        </div>
-      </div>
+      <AdminTopBar pageTitle="Configuración Maestra" statusText="Azure Cosmos DB Online" />
       
       <div className="admin-page__content">
         {isLoading ? (

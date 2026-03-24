@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import AdminTopBar from '../components/AdminTopBar'
 import { Shield, AlertTriangle, Zap, ShieldOff, Server } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useMsal } from '@azure/msal-react'
@@ -35,17 +36,7 @@ export default function SecurityPage() {
 
   return (
     <div className="admin-page">
-      <div className="admin-page__topbar">
-        <div className="admin-page__breadcrumb">
-          <span className="admin-page__breadcrumb-parent">Admin</span>
-          <span className="admin-page__breadcrumb-sep">›</span>
-          <span className="admin-page__breadcrumb-current">Gobernanza de Seguridad</span>
-        </div>
-        <div className="admin-page__topbar-right">
-          <Zap size={14} className="topbar-icon--connected" />
-          <span className="topbar-status">Azure AI Content Safety Activado</span>
-        </div>
-      </div>
+      <AdminTopBar pageTitle="Gobernanza de Seguridad" statusText="Azure AI Content Safety Activado" />
       <div className="admin-page__content">
         {isLoading ? (
           <DashboardLoader message="Cargando métricas de seguridad" />

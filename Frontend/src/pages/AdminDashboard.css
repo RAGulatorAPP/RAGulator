@@ -5,50 +5,6 @@
   min-height: 100vh;
 }
 
-.admin-page__topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1.75rem;
-  border-bottom: 1px solid var(--border-primary);
-  background: var(--bg-secondary);
-}
-
-.admin-page__breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.admin-page__breadcrumb-parent {
-  color: var(--text-muted);
-}
-
-.admin-page__breadcrumb-sep {
-  color: var(--text-muted);
-}
-
-.admin-page__breadcrumb-current {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.admin-page__topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.topbar-icon--connected {
-  color: var(--accent-success);
-}
-
-.topbar-status {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
 .admin-page__content {
   padding: 1.5rem 1.75rem;
   flex: 1;

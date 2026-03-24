@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import AdminTopBar from '../components/AdminTopBar'
 import {
   Zap, TrendingUp, Activity
 } from 'lucide-react'
@@ -45,17 +46,7 @@ export default function QualityPage() {
 
   return (
     <div className="admin-page">
-      <div className="admin-page__topbar">
-        <div className="admin-page__breadcrumb">
-          <span className="admin-page__breadcrumb-parent">Admin</span>
-          <span className="admin-page__breadcrumb-sep">›</span>
-          <span className="admin-page__breadcrumb-current">Evaluación de Calidad RAG</span>
-        </div>
-        <div className="admin-page__topbar-right">
-          <Zap size={14} className="topbar-icon--connected" />
-          <span className="topbar-status">Azure AI Search Conectado</span>
-        </div>
-      </div>
+      <AdminTopBar pageTitle="Evaluación de Calidad RAG" statusText="Azure AI Search Conectado" />
 
       <div className="admin-page__content">
         {isLoading ? (

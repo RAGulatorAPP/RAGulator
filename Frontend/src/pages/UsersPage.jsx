@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import AdminTopBar from '../components/AdminTopBar'
 import {
   Users, Zap, Search, Shield, UserCheck, Eye,
   ShieldCheck, X, Plus, Trash2, CheckCircle2, AlertCircle
@@ -136,17 +137,7 @@ export default function UsersPage() {
 
   return (
     <div className="admin-page">
-      <div className="admin-page__topbar">
-        <div className="admin-page__breadcrumb">
-          <span className="admin-page__breadcrumb-parent">Admin</span>
-          <span className="admin-page__breadcrumb-sep">›</span>
-          <span className="admin-page__breadcrumb-current">Usuarios & Roles</span>
-        </div>
-        <div className="admin-page__topbar-right">
-          <Zap size={14} className="topbar-icon--connected" />
-          <span className="topbar-status">Microsoft Entra ID Conectado</span>
-        </div>
-      </div>
+      <AdminTopBar pageTitle="Usuarios & Roles" statusText="Microsoft Entra ID Conectado" />
 
       <div className="admin-page__content">
         {isLoading ? (

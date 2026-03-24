@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import AdminTopBar from '../components/AdminTopBar'
 import {
   Sparkles, Clock, FileText, AlertTriangle, TrendingUp, Zap
 } from 'lucide-react'
@@ -43,18 +44,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-page">
-      {/* Breadcrumb & Status */}
-      <div className="admin-page__topbar">
-        <div className="admin-page__breadcrumb">
-          <span className="admin-page__breadcrumb-parent">Admin</span>
-          <span className="admin-page__breadcrumb-sep">›</span>
-          <span className="admin-page__breadcrumb-current">Panel de Administración y Gobernanza RAG</span>
-        </div>
-        <div className="admin-page__topbar-right">
-          <Zap size={14} className="topbar-icon--connected" />
-          <span className="topbar-status">Azure AI Search Conectado</span>
-        </div>
-      </div>
+      <AdminTopBar pageTitle="Panel de Administración y Gobernanza RAG" statusText="Azure AI Search Conectado" />
 
       <div className="admin-page__content">
         {isLoading ? (

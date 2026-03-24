@@ -8,6 +8,7 @@ import { useMsal } from '@azure/msal-react'
 import { loginRequest } from '../authConfig'
 import { authFetch, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
+import UserSection from '../components/UserSection'
 import './ChatPage.css'
 
 export default function ChatPage() {
@@ -17,7 +18,6 @@ export default function ChatPage() {
   const account = accounts[0] || instance.getActiveAccount()
   const roles = account?.idTokenClaims?.roles || []
   const isAdmin = roles.includes('Admin')
-  const username = account?.name || 'Usuario'
 
   const [inputValue, setInputValue] = useState('')
   const [activeCitation, setActiveCitation] = useState(null)
@@ -49,7 +49,7 @@ export default function ChatPage() {
       })
       .catch(err => console.error("Error loading sessions:", err))
       .finally(() => setIsLoadingSessions(false))
-  }, [])
+  }, [instance])
 
   // Load messages when active session changes
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function ChatPage() {
       })
       .catch(err => console.error("Error loading messages:", err))
       .finally(() => setIsLoadingMessages(false))
-  }, [activeSessionId])
+  }, [activeSessionId, instance])
 
   const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant')
 
@@ -255,27 +255,7 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* User Identity Footer */}
-        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', background: 'rgba(0, 0, 0, 0.12)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} alt="avatar" style={{width: '42px', height: '42px', borderRadius: '50%', background: 'var(--surface)', border: '2px solid rgba(255, 255, 255, 0.1)'}} />
-            <div style={{overflow: 'hidden'}}>
-              <div style={{fontSize: '14px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: '1.2'}}>{username}</div>
-              <div style={{fontSize: '13px', color: 'rgba(255, 255, 255, 0.4)', marginTop: '4px'}}>{isAdmin ? "Administrador" : "Usuario"}</div>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => { instance.logoutRedirect().catch(e => console.error(e)); }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '10px', background: 'rgba(239, 68, 68, 0.05)', color: 'rgba(239, 68, 68, 0.8)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '500', transition: 'all 0.15s ease-out' }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.transform = 'scale(0.98)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.color = 'rgba(239, 68, 68, 0.8)'; e.currentTarget.style.transform = 'none'; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
-          >
-            <LogOut size={16} /> Cerrar Sesión
-          </button>
-        </div>
+        <UserSection showAdminLink={true} showLogout={false} />
       </aside>
 
       {/* Main Chat Area */}
@@ -289,7 +269,7 @@ export default function ChatPage() {
               Gobernado y Trazable
             </span>
           </div>
-          <div className="chat-header__right">
+          <div className="chat-header__right" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             {isAdmin && (
               <button
                 onClick={() => navigate('/admin')}
@@ -301,6 +281,15 @@ export default function ChatPage() {
                 Panel de Administración
               </button>
             )}
+            <button
+              onClick={() => { instance.logoutRedirect().catch(e => console.error(e)); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239, 68, 68, 0.05)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '10px 18px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.15s' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <LogOut size={16} />
+              Cerrar Sesión
+            </button>
           </div>
         </header>
 
