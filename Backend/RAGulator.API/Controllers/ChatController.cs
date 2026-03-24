@@ -60,40 +60,49 @@ public class ChatController(FoundryChatService chatService, ChatHistoryService h
     [HttpPost("message")]
     public async Task<ActionResult<object>> SendMessage([FromBody] SendMessageRequest request)
     {
-        var userId = GetUserId();
-        var sessionId = request.ConversationId?.ToString();
-        
-        // Si viene con sessionId (string en el body), guardar el mensaje del usuario
-        if (!string.IsNullOrEmpty(request.SessionId))
+        try
         {
-            sessionId = request.SessionId;
-            await historyService.AddMessageAsync(userId, sessionId, new ChatSessionMessage
+            var userId = GetUserId();
+            var sessionId = request.ConversationId?.ToString();
+            
+            // Si viene con sessionId (string en el body), guardar el mensaje del usuario
+            if (!string.IsNullOrEmpty(request.SessionId))
             {
-                Role = "user",
-                Content = request.Message
+                sessionId = request.SessionId;
+                await historyService.AddMessageAsync(userId, sessionId, new ChatSessionMessage
+                {
+                    Role = "user",
+                    Content = request.Message
+                });
+            }
+
+            // Procesar con el RAG
+            var response = await chatService.ProcessMessageAsync(request);
+
+            // Guardar la respuesta del asistente
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                var assistantMsg = new ChatSessionMessage
+                {
+                    Id = response.AssistantMessage.Id,
+                    Role = "assistant",
+                    Content = response.AssistantMessage.Content,
+                    Citations = response.AssistantMessage.Citations,
+                    Groundedness = response.AssistantMessage.Groundedness
+                };
+                await historyService.AddMessageAsync(userId, sessionId, assistantMsg);
+            }
+
+            return Ok(new
+            {
+                botMessage = response.AssistantMessage
             });
         }
-
-        // Procesar con el RAG
-        var response = await chatService.ProcessMessageAsync(request);
-
-        // Guardar la respuesta del asistente
-        if (!string.IsNullOrEmpty(sessionId))
+        catch (Exception ex)
         {
-            var assistantMsg = new ChatSessionMessage
-            {
-                Id = response.AssistantMessage.Id,
-                Role = "assistant",
-                Content = response.AssistantMessage.Content,
-                Citations = response.AssistantMessage.Citations,
-                Groundedness = response.AssistantMessage.Groundedness
-            };
-            await historyService.AddMessageAsync(userId, sessionId, assistantMsg);
+            Console.WriteLine($"[ChatController] CRITICAL ERROR in SendMessage: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return StatusCode(500, new { error = "Internal Server Error in Chat Message Processing", detail = ex.Message });
         }
-
-        return Ok(new
-        {
-            botMessage = response.AssistantMessage
-        });
     }
 }

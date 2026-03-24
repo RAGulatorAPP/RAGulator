@@ -144,6 +144,11 @@ public class FoundryChatService
                 new ChatMessage(DateTime.UtcNow.Millisecond + 1, "assistant", "🔒 Mensaje bloqueado por Gobernanza RAG. El filtro maestro integrado de Azure OpenAI rechazó categóricamente este prompt.", new List<Citation>(), 0)
             );
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FoundryChatService] AI Request Failed: {ex.Message}");
+            throw; // Rethrow to let the controller handle it but with more context in the console
+        }
 
         var replyContent = response.Value.Content;
         
