@@ -144,9 +144,10 @@ export default function ChatPage() {
         body: JSON.stringify({ message: userText, sessionId: currentSessionId })
       })
       
-      if (!response.ok) throw new Error('API Error')
-      
       const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.detail || data.error || 'Server Error')
+      }
       const newBotMsg = data.botMessage || data.assistantMessage || data.responseMessage || {
          id: Date.now() + 1,
          role: 'assistant',
@@ -159,7 +160,7 @@ export default function ChatPage() {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: "⚠️ Hubo un error al comunicarse con el Backend. Verifica que el servidor C# esté ejecutándose."
+        content: `⚠️ Error de Comunicación: ${err.message}. Verifica que todas las variables de entorno en Azure (API Keys, Deployment Name) sean correctas.`
       }])
     } finally {
       setIsTyping(false)
