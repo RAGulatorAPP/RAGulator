@@ -15,8 +15,8 @@ export default function LoginPage() {
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '48px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-                <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: '24px' }}>
-                    <ShieldAlert size={48} color="#38bdf8" />
+                <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '20px', background: 'rgba(255, 255, 255, 0.05)', marginBottom: '24px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <img src="/favicon.png" alt="RAGulator Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
                 </div>
                 <h1 style={{ margin: '0 0 16px', fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.5px' }}>RAGulator Enterprise</h1>
                 <p style={{ color: '#94a3b8', marginBottom: '32px', lineHeight: '1.6' }}>
