@@ -8,7 +8,7 @@ using System;
 
 namespace RAGulator.API.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class DocumentsController : ControllerBase
@@ -22,6 +22,7 @@ public class DocumentsController : ControllerBase
         _ingestionService = ingestionService;
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetDocuments()
     {
@@ -42,6 +43,7 @@ public class DocumentsController : ControllerBase
         });
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("upload")]
     public async Task<IActionResult> UploadDocument(IFormFile file)
     {
@@ -56,6 +58,7 @@ public class DocumentsController : ControllerBase
         return Ok(new { message = resultMessage, documentId = Guid.NewGuid() });
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{fileName}")]
     public async Task<IActionResult> DeleteDocument(string fileName)
     {
@@ -68,15 +71,19 @@ public class DocumentsController : ControllerBase
         return Ok(new { message = resultMessage });
     }
 
-    [HttpGet("{fileName}/download")]
+    [HttpGet("download/{*fileName}")]
     public async Task<IActionResult> DownloadDocument(string fileName)
     {
+        Console.WriteLine($"[DocumentsController] Solicitud de descarga para: {fileName}");
         if (string.IsNullOrWhiteSpace(fileName))
             return BadRequest("El nombre del archivo no puede estar vacío.");
 
         var stream = await _ingestionService.DownloadDocumentAsync(fileName);
         if (stream == null)
-            return NotFound("El documento físico no se encontró en el Storage Account seguro.");
+        {
+            Console.WriteLine($"[DocumentsController] ERROR: No se encontró el stream para {fileName}");
+            return NotFound($"El documento '{fileName}' no se encontró en el Storage seguro.");
+        }
 
         return File(stream, "application/pdf");
     }

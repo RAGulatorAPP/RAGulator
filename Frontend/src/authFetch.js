@@ -48,3 +48,46 @@ export async function authFetch(msalInstance, url, options = {}) {
 
     return fetch(url, { ...options, headers });
 }
+
+/**
+ * Downloads a file from a protected API endpoint using MSAL authentication.
+ * 
+ * @param {import("@azure/msal-browser").IPublicClientApplication} msalInstance 
+ * @param {string} url 
+ * @param {string} fileName Optional filename to save as
+ */
+export async function downloadAuthenticatedFile(msalInstance, url, fileName = null) {
+    try {
+        const response = await authFetch(msalInstance, url);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Determinar nombre del archivo si no se provee
+        if (!fileName) {
+            const contentDisposition = response.headers.get('Content-Disposition');
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                fileName = contentDisposition.split('filename=')[1].replace(/["']/g, '');
+            } else {
+                fileName = url.split('/').pop() || 'downloaded_file';
+            }
+        }
+
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        
+        // Limpiar
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+        console.error("Error downloading file:", error);
+        alert(`Error al descargar el archivo: ${error.message}`);
+    }
+}

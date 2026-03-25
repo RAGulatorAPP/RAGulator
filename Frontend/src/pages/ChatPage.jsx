@@ -5,8 +5,7 @@ import {
   Shield, Sparkles, Search, Plus, LogOut, Trash2, ZoomIn
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
-import { loginRequest } from '../authConfig'
-import { authFetch, getApiUrl } from '../authFetch'
+import { authFetch, downloadAuthenticatedFile, getApiUrl } from '../authFetch'
 import DashboardLoader from './DashboardLoader'
 import UserSection from '../components/UserSection'
 import ReactMarkdown from 'react-markdown'
@@ -205,25 +204,9 @@ export default function ChatPage() {
     }
 
     setIsTyping(true)
-
     try {
-      let tokenResponse
-      try {
-        tokenResponse = await instance.acquireTokenSilent({
-            ...loginRequest,
-            account: account
-        })
-      } catch (err) {
-        console.warn("Silent token failed, acquiring popup", err)
-        tokenResponse = await instance.acquireTokenPopup(loginRequest)
-      }
-
-      const response = await fetch(getApiUrl('/api/chat/message'), {
+      const response = await authFetch(instance, getApiUrl('/api/chat/message'), {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenResponse.accessToken}`
-        },
         body: JSON.stringify({ message: userText, sessionId: currentSessionId })
       })
       
@@ -452,15 +435,14 @@ export default function ChatPage() {
             </div>
             <div className="chat-sources__source-name">{activeCitation.source}</div>
             <div className="chat-sources__text">{activeCitation.text}</div>
-            <a 
-              href={getApiUrl(`/api/documents/${activeCitation.source}/download`)} 
-              target="_blank" 
-              rel="noreferrer" 
+            <button
+              onClick={() => downloadAuthenticatedFile(instance, getApiUrl(`/api/documents/download/${encodeURIComponent(activeCitation.source)}`), activeCitation.source)}
               className="chat-sources__link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
             >
               <ExternalLink size={13} />
               Ver documento original (PDF)
-            </a>
+            </button>
             <button 
               className="chat-sources__expand-btn"
               onClick={() => setIsSourceModalOpen(true)}

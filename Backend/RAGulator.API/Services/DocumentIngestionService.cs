@@ -69,16 +69,21 @@ public class DocumentIngestionService
         _indexName = aiSearch.IndexName;
         _containerName = string.IsNullOrWhiteSpace(blobConfig.Value.Bucket) ? "documents" : blobConfig.Value.Bucket;
         
-        var blobConnStr = blobConfig.Value.SecretConn;
+        var blobConnStr = blobConfig.Value.ConnectionString;
         if (string.IsNullOrWhiteSpace(blobConnStr))
         {
-            // Fallback: Intentar leer desde la sección "Connection Strings" estándar de Azure
+            // Fallback: Sección "Connection Strings" estándar de Azure
             blobConnStr = configuration.GetConnectionString("AzureBlobStorage");
         }
 
         if (!string.IsNullOrWhiteSpace(blobConnStr))
         {
             _blobServiceClient = new BlobServiceClient(blobConnStr);
+            Console.WriteLine("[RAGulator Boot] BlobServiceClient inicializado exitosamente.");
+        }
+        else
+        {
+            Console.WriteLine("[RAGulator Boot] ADVERTENCIA: No se pudo encontrar una Connection String para Blob Storage. Las descargas físicas fallarán.");
         }
     }
 
@@ -287,6 +292,8 @@ public class DocumentIngestionService
         {
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
             var blobClient = containerClient.GetBlobClient(fileName);
+
+            Console.WriteLine($"[BlobStorage] Buscando blob: '{fileName}' en contenedor: '{_containerName}'");
 
             if (await blobClient.ExistsAsync())
             {
