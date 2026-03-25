@@ -1,3 +1,5 @@
+using StackExchange.Redis;
+using Microsoft.Azure.StackExchangeRedis;
 using Azure.Identity;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -161,13 +163,19 @@ if (!string.IsNullOrWhiteSpace(redisConn))
 {
     builder.Services.AddStackExchangeRedisCache(options =>
     {
-        options.Configuration = redisConn;
         options.InstanceName = "RAGulator_";
+        options.ConnectionMultiplexerFactory = async () =>
+        {
+            var configOptions = ConfigurationOptions.Parse(redisConn);
+            // Forza limpieza de password si quedó en config, para usar Entra ID
+            configOptions.Password = null; 
+            await configOptions.ConfigureForAzureWithTokenCredentialAsync(new DefaultAzureCredential());
+            return await ConnectionMultiplexer.ConnectAsync(configOptions);
+        };
     });
 }
 else
 {
-    // Fallback a memoria local si no hay Redis configurado
     builder.Services.AddDistributedMemoryCache();
 }
 

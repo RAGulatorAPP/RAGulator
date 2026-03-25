@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '../authConfig';
-import { ShieldAlert, LogIn } from 'lucide-react';
+import { ShieldAlert, LogIn, ExternalLink } from 'lucide-react';
 
 export default function LoginPage() {
     const { instance } = useMsal();
@@ -31,6 +31,48 @@ export default function LoginPage() {
                     <LogIn size={22} />
                     Iniciar Sesión Corporativo
                 </button>
+
+                <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+                    <span style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '1px' }}>O</span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+                </div>
+
+                <a 
+                    href="https://forms.office.com/e/sYJbXPmw7H"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ 
+                        marginTop: '24px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '8px', 
+                        padding: '12px', 
+                        borderRadius: '12px', 
+                        border: '1px solid rgba(255,255,255,0.1)', 
+                        background: 'rgba(255,255,255,0.02)', 
+                        color: '#94a3b8', 
+                        textDecoration: 'none', 
+                        fontSize: '0.95rem', 
+                        fontWeight: 500, 
+                        transition: 'all 0.2s',
+                        width: 'calc(100% - 24px)'
+                    }}
+                    onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                        e.currentTarget.style.color = '#f8fafc';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        e.currentTarget.style.color = '#94a3b8';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    }}
+                >
+                    <ExternalLink size={18} />
+                    Solicitar Acceso
+                </a>
             </div>
             <div style={{ position: 'absolute', bottom: '24px', color: '#475569', fontSize: '0.85rem' }}>
                 Protegido por Microsoft Identity Web & MSAL React
