@@ -65,3 +65,13 @@ public class ContentSafetyConfig
     public string Endpoint { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Azure Cache for Redis configuration.
+/// ConnectionString loaded from Azure Key Vault (secret: AzureRedis--ConnectionString).
+/// </summary>
+public class AzureRedisConfig
+{
+    public const string Section = "AzureRedis";
+    public string ConnectionString { get; set; } = string.Empty;
+}

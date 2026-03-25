@@ -17,10 +17,19 @@ public class DashboardController(
     [HttpGet("metrics")]
     public async Task<IActionResult> GetDashboardMetrics()
     {
-        int totalDocs = await ingestionService.GetIngestedDocumentCountAsync();
+        // Start tasks in parallel
+        var totalDocsTask = ingestionService.GetIngestedDocumentCountAsync();
+        var groundHistoryTask = telemetryService.GetGroundednessHistoryAsync();
+        var recentAlertsTask = telemetryService.GetRecentAlertsAsync();
+
+        await Task.WhenAll(totalDocsTask, groundHistoryTask, recentAlertsTask);
+
+        int totalDocs = totalDocsTask.Result;
+        var groundHistory = groundHistoryTask.Result;
+        var recentAlerts = recentAlertsTask.Result;
+
+        // This one depends on totalDocs, so we call it after
         var snapshot = await telemetryService.GetMetricsSnapshotAsync(totalDocs);
-        var groundHistory = await telemetryService.GetGroundednessHistoryAsync();
-        var recentAlerts = await telemetryService.GetRecentAlertsAsync();
         
         return Ok(new {
             metrics = snapshot,

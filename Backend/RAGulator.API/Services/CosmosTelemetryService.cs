@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 using RAGulator.API.Configuration;
 using RAGulator.API.Models.Telemetry;
 
@@ -8,16 +11,55 @@ namespace RAGulator.API.Services;
 public class CosmosTelemetryService : ITelemetryService
 {
     private readonly CosmosClient? _cosmosClient;
+    private readonly IDistributedCache _cache;
     private readonly string _databaseName;
     private const string ContainerName = "ChatTelemetry";
 
-    public CosmosTelemetryService(IOptions<CosmosDBConfig> config)
+    public CosmosTelemetryService(IOptions<CosmosDBConfig> config, IDistributedCache cache)
     {
+        _cache = cache;
         _databaseName = config.Value.DatabaseName;
         if (!string.IsNullOrWhiteSpace(config.Value.ConnectionString))
         {
             _cosmosClient = new CosmosClient(config.Value.ConnectionString);
         }
+    }
+
+    private async Task<T?> GetCachedAsync<T>(string key)
+    {
+        try 
+        {
+            var sw = Stopwatch.StartNew();
+            // Timeout de 1 segundo para evitar bloqueos por firewall o red lenta
+            var cacheTask = _cache.GetStringAsync(key);
+            if (await Task.WhenAny(cacheTask, Task.Delay(1000)) == cacheTask)
+            {
+                var data = await cacheTask;
+                if (data != null)
+                {
+                    Console.WriteLine($"[REDIS] HIT: {key} ({sw.ElapsedMilliseconds}ms)");
+                    return JsonConvert.DeserializeObject<T>(data);
+                }
+                Console.WriteLine($"[REDIS] MISS: {key} ({sw.ElapsedMilliseconds}ms)");
+            }
+            else
+            {
+                Console.WriteLine($"[REDIS] TIMEOUT: {key} (>1000ms). Ignorando caché.");
+            }
+        } 
+        catch (Exception ex) 
+        { 
+            Console.WriteLine($"[REDIS] ERROR: {ex.Message}. Reintentando con Cosmos DB.");
+        }
+        return default;
+    }
+
+    private async Task SetCacheAsync<T>(string key, T value, int minutes = 5)
+    {
+        try {
+            var options = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(minutes) };
+            await _cache.SetStringAsync(key, JsonConvert.SerializeObject(value), options);
+        } catch { }
     }
 
     private async Task<Container?> GetContainerAsync()
@@ -40,50 +82,55 @@ public class CosmosTelemetryService : ITelemetryService
 
     public async Task<object> GetMetricsSnapshotAsync(int totalDocuments)
     {
-        double avgGroundedness = 0;
-        double avgLatency = 0;
-        int totalAlerts = 0;
+        string cacheKey = "metrics_snapshot_" + totalDocuments;
+        var cached = await GetCachedAsync<object>(cacheKey);
+        if (cached != null) return cached;
 
         var container = await GetContainerAsync();
-        if (container != null)
-        {
-            // Query aggregates: AVG(c.GroundednessScore), AVG(c.ResponseTimeMs)
-            var query = new QueryDefinition("SELECT VALUE AVG(c.GroundednessScore) FROM c WHERE c.HasContentSafetyAlert != true");
-            using var groundIterator = container.GetItemQueryIterator<double>(query);
-            if (groundIterator.HasMoreResults)
-            {
-                var response = await groundIterator.ReadNextAsync();
-                avgGroundedness = response.FirstOrDefault();
-            }
+        if (container == null) return new { };
+        // Define query tasks to run in parallel
+        var groundTask = GetAverageMetricAsync(container, "GroundednessScore");
+        var latencyTask = GetAverageMetricAsync(container, "ResponseTimeMs");
+        var alertsTask = GetAlertCountAsync(container);
 
-            var queryLat = new QueryDefinition("SELECT VALUE AVG(c.ResponseTimeMs) FROM c WHERE c.HasContentSafetyAlert != true");
-            using var latIterator = container.GetItemQueryIterator<double>(queryLat);
-            if (latIterator.HasMoreResults)
-            {
-                var response = await latIterator.ReadNextAsync();
-                avgLatency = response.FirstOrDefault();
-            }
+        await Task.WhenAll(groundTask, latencyTask, alertsTask);
 
-            var queryAlerts = new QueryDefinition("SELECT VALUE COUNT(1) FROM c WHERE c.HasContentSafetyAlert = true");
-            using var altIterator = container.GetItemQueryIterator<int>(queryAlerts);
-            if (altIterator.HasMoreResults)
-            {
-                var response = await altIterator.ReadNextAsync();
-                totalAlerts = response.FirstOrDefault();
-            }
-        }
+        double avgGroundedness = groundTask.Result;
+        double avgLatency = latencyTask.Result;
+        int totalAlerts = alertsTask.Result;
 
-        return new
+        var result = new
         {
             groundednessScore = new { value = double.IsNaN(avgGroundedness) ? "0.00" : avgGroundedness.ToString("0.00"), trend = "+0%" },
             responseTime = new { value = $"{Math.Round(double.IsNaN(avgLatency) ? 0 : avgLatency)}ms", trend = "-0%" },
             documentsIngested = new { value = totalDocuments, trend = "Azure AI Search" },
             contentSafetyAlerts = new { value = totalAlerts, trend = "Seguro" }
         };
+
+        await SetCacheAsync(cacheKey, result);
+        return result;
+    }
+
+    private async Task<int> GetAlertCountAsync(Container container)
+    {
+        try {
+            var queryAlerts = new QueryDefinition("SELECT VALUE COUNT(1) FROM c WHERE c.HasContentSafetyAlert = true");
+            using var altIterator = container.GetItemQueryIterator<int>(queryAlerts);
+            if (altIterator.HasMoreResults)
+            {
+                var response = await altIterator.ReadNextAsync();
+                return response.FirstOrDefault();
+            }
+        } catch { }
+        return 0;
     }
 
     public async Task<List<object>> GetGroundednessHistoryAsync()
     {
+        string cacheKey = "groundedness_history";
+        var cached = await GetCachedAsync<List<object>>(cacheKey);
+        if (cached != null) return cached;
+
         var result = new List<object>();
         var container = await GetContainerAsync();
         
@@ -111,6 +158,7 @@ public class CosmosTelemetryService : ITelemetryService
                 double val = item.GroundednessScore;
                 result.Add(new { date = t.ToLocalTime().ToString("HH:mm"), value = Math.Round(val, 2) });
             }
+            await SetCacheAsync(cacheKey, result);
             return result;
         }
 
@@ -172,26 +220,34 @@ public class CosmosTelemetryService : ITelemetryService
 
     public async Task<object> GetQualityMetricsAsync()
     {
-        double g = 0.98, r = 0.95, c = 0.97, f = 0.99, cr = 0.92;
+        string cacheKey = "quality_metrics";
+        var cached = await GetCachedAsync<object>(cacheKey);
+        if (cached != null) return cached;
+
         var container = await GetContainerAsync();
-        
-        if (container != null)
-        {
-            double valG = await GetAverageMetricAsync(container, "GroundednessScore");
-            if (valG > 0) g = valG;
-            
-            double valR = await GetAverageMetricAsync(container, "RelevanceScore");
-            if (valR > 0) r = valR;
+        if (container == null) return new { };
 
-            double valC = await GetAverageMetricAsync(container, "CoherenceScore");
-            if (valC > 0) c = valC;
+        // Fetch metrics in parallel
+        var gTask = GetAverageMetricAsync(container, "GroundednessScore");
+        var rTask = GetAverageMetricAsync(container, "RelevanceScore");
+        var cTask = GetAverageMetricAsync(container, "CoherenceScore");
+        var fTask = GetAverageMetricAsync(container, "FluencyScore");
+        var crTask = GetAverageMetricAsync(container, "ContextRecallScore");
 
-            double valF = await GetAverageMetricAsync(container, "FluencyScore");
-            if (valF > 0) f = valF;
+        await Task.WhenAll(gTask, rTask, cTask, fTask, crTask);
 
-            double valCR = await GetAverageMetricAsync(container, "ContextRecallScore");
-            if (valCR > 0) cr = valCR;
-        }
+        double g = gTask.Result;
+        double r = rTask.Result;
+        double c = cTask.Result;
+        double f = fTask.Result;
+        double cr = crTask.Result;
+
+        // Fallbacks for empty database
+        if (g == 0) g = 0.98;
+        if (r == 0) r = 0.95;
+        if (c == 0) c = 0.97;
+        if (f == 0) f = 0.99;
+        if (cr == 0) cr = 0.92;
 
         var metricsMap = new
         {
@@ -236,15 +292,21 @@ public class CosmosTelemetryService : ITelemetryService
         }
         if (historyList.Count == 0) historyList.Add(new { date = DateTime.Now.ToString("HH:mm"), groundedness = 0.98, relevance = 0.95, coherence = 0.97, fluency = 0.99 });
 
-        return new {
+        var finalResult = new {
             metrics = metricsMap,
             radarChart = radarChart,
             lineChart = historyList
         };
+        await SetCacheAsync(cacheKey, finalResult);
+        return finalResult;
     }
 
     public async Task<object> GetSecurityMetricsAsync()
     {
+        string cacheKey = "security_metrics";
+        var cached = await GetCachedAsync<object>(cacheKey);
+        if (cached != null) return cached;
+
         int totalBlocks = 0;
         var distribution = new List<object>();
         var recentIncidents = new List<object>();
@@ -290,11 +352,13 @@ public class CosmosTelemetryService : ITelemetryService
             } catch { }
         }
 
-        return new {
+        var result = new {
              totalBlocks = totalBlocks,
              distribution = distribution,
              recentIncidents = recentIncidents
         };
+        await SetCacheAsync(cacheKey, result);
+        return result;
     }
 
     public async Task<List<ChatInteractionTelemetry>> GetAuditLogsAsync(int limit = 50)

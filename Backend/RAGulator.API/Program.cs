@@ -154,6 +154,24 @@ builder.Services.AddSingleton<ChatHistoryService>();
 builder.Services.AddSingleton<GraphUsersService>();
 
 // =====================================================
+// DISTRIBUTED CACHING (Azure Cache for Redis)
+// =====================================================
+var redisConn = builder.Configuration["AzureRedis:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConn;
+        options.InstanceName = "RAGulator_";
+    });
+}
+else
+{
+    // Fallback a memoria local si no hay Redis configurado
+    builder.Services.AddDistributedMemoryCache();
+}
+
+// =====================================================
 // CORS
 // =====================================================
 builder.Services.AddCors(options =>
