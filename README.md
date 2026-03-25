@@ -25,6 +25,7 @@ RAGulator no es solo un chat; es una orquestación distribuida de más de 13 ser
 | **Secretos** | **Azure Key Vault** | Gestión centralizada de llaves y certificados de producción. |
 | **Observabilidad** | **Azure Application Insights** | Telemetría detallada de rendimiento y trazas de errores. |
 | **Diagnóstico** | **Azure Monitor** | Análisis de salud de la infraestructura y alertas críticas. |
+| **Rendimiento** | **Azure Cache for Redis** | Capa de caché distribuida (Cache-Aside) para carga instantánea de dashboards. |
 
 ---
 
@@ -39,10 +40,14 @@ Los documentos subidos se envían a **Document Intelligence** para un OCR de alt
 ### 3. Trazabilidad y Auditoría (Governed RAG)
 Cada mensaje generado incluye un **Groundedness Score** calculado dinámicamente. Todas las interacciones se registran en **Cosmos DB** junto con los logs de **Application Insights**, permitiendo auditorías completas de seguridad.
 
-### 4. Seguridad de Grado Empresarial
+### 4. Carga Instantánea con Azure Redis
+La plataforma implementa una capa de caché persistente que almacena los resultados de telemetría y métricas durante 5 minutos, permitiendo que el panel de administración responda en milisegundos tras la primera consulta.
+
+### 5. Seguridad de Grado Empresarial
 - **CORS Estricto**: Solo el Frontend autorizado en Static Web Apps puede llamar a la API.
 - **Entra ID Native**: Login seguro integrado con el directorio activo de la organización.
 - **Content Safety**: Filtrado automático de cualquier respuesta que no cumpla con las políticas de ética AI.
+- **Zero-Secrets Policy**: Autenticación sin contraseñas para Redis y Key Vault mediante Managed Identities.
 
 ---
 
