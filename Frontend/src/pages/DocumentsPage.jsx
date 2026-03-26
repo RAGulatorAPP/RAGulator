@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import AdminTopBar from '../components/AdminTopBar'
 import {
-  FileText, Upload, Search, Download, Eye, RefreshCw, Trash2, Zap, Filter, Loader2, CheckCircle2, AlertCircle
+  FileText, Upload, Search, Download, Eye, RefreshCw, Trash2, Zap, Filter, Loader2, CheckCircle2, AlertCircle, Cloud
 } from 'lucide-react'
 import { useMsal } from '@azure/msal-react'
 import { authFetch, downloadAuthenticatedFile, getApiUrl } from '../authFetch'
+import OneDriveModal from '../components/OneDriveModal'
 import './DocumentsPage.css'
 
 const statusColors = {
@@ -24,6 +25,7 @@ export default function DocumentsPage() {
   const [stats, setStats] = useState({ totalDocs: 0, processed: 0, indexing: 0, error: 0, totalFragments: 0 })
   const [isLoadingDocs, setIsLoadingDocs] = useState(true)
 
+  const [isOneDriveModalOpen, setIsOneDriveModalOpen] = useState(false)
   const fileInputRef = useRef(null)
 
   const fetchDocuments = useCallback(async () => {
@@ -133,6 +135,14 @@ export default function DocumentsPage() {
               style={{ display: 'none' }} 
               onChange={handleFileChange} 
             />
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setIsOneDriveModalOpen(true)}
+              style={{ minWidth: '220px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Cloud size={16} />
+              Vincular OneDrive
+            </button>
             <button 
               className="btn btn-primary" 
               onClick={handleUploadClick}
@@ -317,6 +327,13 @@ export default function DocumentsPage() {
           </table>
         </div>
       </div>
+
+      <OneDriveModal 
+        isOpen={isOneDriveModalOpen} 
+        onClose={() => setIsOneDriveModalOpen(false)} 
+        instance={instance}
+        onSyncComplete={fetchDocuments}
+      />
     </div>
   )
 }

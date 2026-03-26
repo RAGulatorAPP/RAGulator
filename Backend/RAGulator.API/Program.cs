@@ -154,6 +154,7 @@ builder.Services.AddSingleton<FoundryChatService>();
 builder.Services.AddSingleton<ITelemetryService, CosmosTelemetryService>();
 builder.Services.AddSingleton<ChatHistoryService>();
 builder.Services.AddSingleton<GraphUsersService>();
+builder.Services.AddSingleton<IOneDriveService, OneDriveService>();
 
 // =====================================================
 // DISTRIBUTED CACHING (Azure Cache for Redis)
