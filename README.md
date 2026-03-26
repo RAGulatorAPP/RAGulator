@@ -26,6 +26,7 @@ RAGulator no es solo un chat; es una orquestación distribuida de más de 13 ser
 | **Observabilidad** | **Azure Application Insights** | Telemetría detallada de rendimiento y trazas de errores. |
 | **Diagnóstico** | **Azure Monitor** | Análisis de salud de la infraestructura y alertas críticas. |
 | **Rendimiento** | **Azure Cache for Redis** | Capa de caché distribuida (Cache-Aside) para carga instantánea de dashboards. |
+| **Documentación** | **Scalar (OpenAPI)** | API Reference moderna e interactiva integrada en el backend. |
 
 ---
 
@@ -56,7 +57,7 @@ La plataforma implementa una capa de caché persistente que almacena los resulta
 RAGulator sigue una arquitectura de microservicios y capas limpia (Clean Architecture):
 
 - **`Frontend/`**: Aplicación Single Page (SPA) construida con **React 19** y **Vite 8**. Implementa un Design System premium con Glassmorphism y visualización de datos en tiempo real mediante Recharts.
-- **`Backend/`**: Web API robusta en **.NET 10**. Utiliza el SDK oficial de Azure para la integración nativa con todos los servicios de AI sin dependencias de terceros.
+- **`Backend/`**: Web API robusta en **.NET 10**. Utiliza el SDK oficial de Azure para la integración nativa y expone una **Documentación Técnica (Scalar)** para pruebas interactivas de endpoints.
 
 ---
 
