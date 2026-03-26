@@ -1,5 +1,6 @@
 import { useMsal } from '@azure/msal-react'
-import { LogOut, Zap } from 'lucide-react'
+import { LogOut, Zap, FileText } from 'lucide-react'
+import { getApiUrl } from '../authFetch'
 import './AdminTopBar.css'
 
 export default function AdminTopBar({ pageTitle, statusText = "Azure Online", statusIcon: Icon = Zap }) {
@@ -22,6 +23,17 @@ export default function AdminTopBar({ pageTitle, statusText = "Azure Online", st
           <Icon size={14} className="topbar-icon--connected" />
           <span className="topbar-status">{statusText}</span>
         </div>
+
+        <a 
+          href={getApiUrl('/scalar/v1')} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="admin-topbar__docs-link"
+          title="Ver documentación técnica de la API"
+        >
+          <FileText size={14} />
+          <span>Docs API</span>
+        </a>
         
         <button
           onClick={handleLogout}
