@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using StackExchange.Redis;
 using Microsoft.Azure.StackExchangeRedis;
 using Azure.Identity;
@@ -181,6 +182,11 @@ else
 }
 
 // =====================================================
+// OPENAPI / SCALAR
+// =====================================================
+builder.Services.AddOpenApi();
+
+// =====================================================
 // CORS
 // =====================================================
 builder.Services.AddCors(options =>
@@ -195,6 +201,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.MapOpenApi();
+app.MapScalarApiReference(options => {
+    options.WithTitle("RAGulator API Reference")
+           .WithTheme(ScalarTheme.Moon)
+           .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+});
 
 app.UseCors("AllowFrontend");
 
