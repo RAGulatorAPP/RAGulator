@@ -84,28 +84,37 @@ public class OneDriveService : IOneDriveService
     public async Task<List<object>> GetDrivesAsync()
     {
         var token = await GetAccessTokenAsync();
-        if (token == null) return new List<object>();
+        if (token == null) {
+            Console.WriteLine("[OneDriveService] ERROR: No se pudo obtener el token.");
+            return new List<object>();
+        }
 
         try
         {
-            // Listar drives de todo el tenant (requiere Files.Read.All o Sites.Read.All Application permissions)
             var url = "https://graph.microsoft.com/v1.0/drives";
+            Console.WriteLine($"[OneDriveService] GET {url}");
             var output = RunCurl(url, "GET", null, token);
+            Console.WriteLine($"[OneDriveService] Drives Response Length: {output.Length}");
             
             using var doc = JsonDocument.Parse(output);
             if (doc.RootElement.TryGetProperty("value", out var valueProp))
             {
-                return valueProp.EnumerateArray().Select(d => (object)new {
+                var drives = valueProp.EnumerateArray().Select(d => (object)new {
                     id = d.GetProperty("id").GetString(),
                     name = d.TryGetProperty("name", out var n) ? n.GetString() : "OneDrive",
                     driveType = d.GetProperty("driveType").GetString(),
                     owner = d.TryGetProperty("owner", out var o) && o.TryGetProperty("user", out var u) ? u.GetProperty("displayName").GetString() : "System"
                 }).ToList();
+                Console.WriteLine($"[OneDriveService] Encontrados {drives.Count} drives.");
+                return drives;
+            }
+            else {
+                Console.WriteLine($"[OneDriveService] Alerta: No se encontró 'value' en la respuesta de drives: {output}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[OneDriveService] Error al obtener drives: {ex.Message}");
+            Console.WriteLine($"[OneDriveService] EXCEPCION al obtener drives: {ex.Message}");
         }
         return new List<object>();
     }
@@ -118,18 +127,22 @@ public class OneDriveService : IOneDriveService
         try
         {
             var url = $"https://graph.microsoft.com/v1.0/drives/{driveId}/items/{itemId}/children";
+            Console.WriteLine($"[OneDriveService] GET {url}");
             var output = RunCurl(url, "GET", null, token);
+            Console.WriteLine($"[OneDriveService] Items Response Length: {output.Length}");
             
             using var doc = JsonDocument.Parse(output);
             if (doc.RootElement.TryGetProperty("value", out var valueProp))
             {
-                return valueProp.EnumerateArray().Select(i => (object)new {
+                var items = valueProp.EnumerateArray().Select(i => (object)new {
                     id = i.GetProperty("id").GetString(),
                     name = i.GetProperty("name").GetString(),
                     isFolder = i.TryGetProperty("folder", out _),
                     size = i.GetProperty("size").GetInt64(),
                     lastModified = i.GetProperty("lastModifiedDateTime").GetDateTime()
                 }).ToList();
+                Console.WriteLine($"[OneDriveService] Encontrados {items.Count} items en {itemId}.");
+                return items;
             }
         }
         catch (Exception ex)
