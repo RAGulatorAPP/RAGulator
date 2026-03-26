@@ -90,6 +90,33 @@ export default function OneDriveModal({ isOpen, onClose, instance, onSyncComplet
     }
   }
 
+  const [shareUrl, setShareUrl] = useState('')
+
+  const handleResolveLink = async () => {
+    if (!shareUrl) return
+    setIsLoading(true)
+    setStatus(null)
+    try {
+      const res = await authFetch(instance, getApiUrl(`/api/onedrive/resolve?url=${encodeURIComponent(shareUrl)}`))
+      if (!res.ok) throw new Error("No se pudo resolver el enlace")
+      const data = await res.json()
+      
+      const newPath = [{ id: 'root', name: 'OneDrive Compartido', driveId: data.driveId }]
+      if (data.id !== 'root') {
+        newPath.push({ id: data.id, name: data.name, driveId: data.driveId })
+      }
+      setCurrentPath(newPath)
+      fetchItems(data.driveId, data.id)
+      setSelectedFolder(data.isFolder ? data : null)
+      setShareUrl('')
+    } catch (err) {
+      console.error(err)
+      setStatus("Error: Asegúrate de que el enlace sea válido y compartido públicamente o con la aplicación.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -106,6 +133,25 @@ export default function OneDriveModal({ isOpen, onClose, instance, onSyncComplet
         </div>
 
         <div className="modal-body" style={{ padding: '20px' }}>
+          {/* Resolve Link Section */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <input 
+              type="text" 
+              className="input" 
+              placeholder="Pega un enlace compartido de OneDrive..." 
+              value={shareUrl}
+              onChange={(e) => setShareUrl(e.target.value)}
+              style={{ flex: 1, fontSize: '0.85rem' }}
+            />
+            <button 
+              className="btn btn-primary btn-sm" 
+              onClick={handleResolveLink}
+              disabled={!shareUrl || isLoading}
+            >
+              Resolver
+            </button>
+          </div>
+
           {/* Breadcrumbs */}
           <div className="onedrive-breadcrumbs" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             {currentPath.map((p, idx) => (

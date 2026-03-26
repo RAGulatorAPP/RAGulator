@@ -24,6 +24,15 @@ public class OneDriveController : ControllerBase
         return Ok(drives);
     }
 
+    [HttpGet("resolve")]
+    public async Task<IActionResult> ResolveShare([FromQuery] string url)
+    {
+        if (string.IsNullOrEmpty(url)) return BadRequest("URL is required.");
+        var result = await _oneDriveService.ResolveSharingLinkAsync(url);
+        if (result == null) return NotFound("Could not resolve sharing link.");
+        return Ok(result);
+    }
+
     [HttpGet("items/{driveId}/{itemId}")]
     public async Task<IActionResult> GetItems(string driveId, string itemId)
     {

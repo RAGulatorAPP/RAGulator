@@ -84,39 +84,150 @@ public class OneDriveService : IOneDriveService
     public async Task<List<object>> GetDrivesAsync()
     {
         var token = await GetAccessTokenAsync();
-        if (token == null) {
-            Console.WriteLine("[OneDriveService] ERROR: No se pudo obtener el token.");
-            return new List<object>();
-        }
+        if (token == null) return new List<object>();
 
+        var result = new List<object>();
         try
         {
+            // 1. Intentar Drives globales (SharePoint/Shared)
             var url = "https://graph.microsoft.com/v1.0/drives";
-            Console.WriteLine($"[OneDriveService] GET {url}");
             var output = RunCurl(url, "GET", null, token);
-            Console.WriteLine($"[OneDriveService] Drives Response Length: {output.Length}");
+            Console.WriteLine($"[OneDriveService] Drives Globales Response: {output.Length}");
             
             using var doc = JsonDocument.Parse(output);
             if (doc.RootElement.TryGetProperty("value", out var valueProp))
             {
-                var drives = valueProp.EnumerateArray().Select(d => (object)new {
-                    id = d.GetProperty("id").GetString(),
-                    name = d.TryGetProperty("name", out var n) ? n.GetString() : "OneDrive",
-                    driveType = d.GetProperty("driveType").GetString(),
-                    owner = d.TryGetProperty("owner", out var o) && o.TryGetProperty("user", out var u) ? u.GetProperty("displayName").GetString() : "System"
-                }).ToList();
-                Console.WriteLine($"[OneDriveService] Encontrados {drives.Count} drives.");
-                return drives;
+                foreach (var d in valueProp.EnumerateArray()) {
+                    result.Add(new {
+                        id = d.GetProperty("id").GetString(),
+                        name = d.TryGetProperty("name", out var n) ? n.GetString() : "OneDrive Shared",
+                        driveType = d.GetProperty("driveType").GetString(),
+                        owner = d.TryGetProperty("owner", out var o) && o.TryGetProperty("user", out var u) ? u.GetProperty("displayName").GetString() : "Shared"
+                    });
+                }
             }
-            else {
-                Console.WriteLine($"[OneDriveService] Alerta: No se encontró 'value' en la respuesta de drives: {output}");
+
+            // 2. Si no hay nada, intentar listar los primeros 5 usuarios y sus drives personals (Opcional, pero ayuda en POCs)
+            if (result.Count == 0) {
+                Console.WriteLine("[OneDriveService] No se encontraron drives globales. Buscando drives de usuarios...");
+                var usersUrl = "https://graph.microsoft.com/v1.0/users?$top=5&$select=id,displayName,userPrincipalName";
+                var usersOutput = RunCurl(usersUrl, "GET", null, token);
+                using var usersDoc = JsonDocument.Parse(usersOutput);
+                if (usersDoc.RootElement.TryGetProperty("value", out var usersVal)) {
+                    foreach (var u in usersVal.EnumerateArray()) {
+                        var uid = u.GetProperty("id").GetString();
+                        var uname = u.GetProperty("displayName").GetString();
+                        var driveUrl = $"https://graph.microsoft.com/v1.0/users/{uid}/drive";
+                        var driveOutput = RunCurl(driveUrl, "GET", null, token);
+                        if (!string.IsNullOrEmpty(driveOutput) && driveOutput.Contains("\"id\"")) {
+                            using var dDoc = JsonDocument.Parse(driveOutput);
+                            result.Add(new {
+                                id = dDoc.RootElement.GetProperty("id").GetString(),
+                                name = $"OneDrive de {uname}",
+                                driveType = "personal",
+                                owner = uname
+                            });
+                        }
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[OneDriveService] EXCEPCION al obtener drives: {ex.Message}");
+            Console.WriteLine($"[OneDriveService] Error al obtener drives: {ex.Message}");
         }
-        return new List<object>();
+        return result;
+    }
+
+    public async Task<object?> ResolveSharingLinkAsync(string shareUrl)
+    {
+        var token = await GetAccessTokenAsync();
+        if (token == null) return null;
+
+        string finalUrl = shareUrl;
+        try
+        {
+            // 1. Si es un link acortado (1drv.ms), expandirlo siguiendo redirecciones con curl
+            if (shareUrl.Contains("1drv.ms")) {
+                Console.WriteLine($"[OneDriveService] Link acortado detectado. Expandiendo: {shareUrl}");
+                var expandArgs = $"-s -o /dev/null -I -w \"%{{url_effective}}\" -L \"{shareUrl}\"";
+                // En Windows /dev/null no existe, usar NUL
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) {
+                     expandArgs = $"-s -o NUL -I -w \"%{{url_effective}}\" -L \"{shareUrl}\"";
+                }
+                
+                var psi = new ProcessStartInfo("curl", expandArgs) { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
+                using (var p = Process.Start(psi)) {
+                    finalUrl = p?.StandardOutput.ReadToEnd().Trim() ?? shareUrl;
+                }
+                Console.WriteLine($"[OneDriveService] Link expandido: {finalUrl}");
+            }
+
+            // 2. Codificar URL para Graph /shares/u!{base64url}
+            string base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(finalUrl));
+            string encodedUrl = "u!" + base64Value.Replace("/", "_").Replace("+", "-").TrimEnd('=');
+            
+            var url = $"https://graph.microsoft.com/v1.0/shares/{encodedUrl}/driveItem";
+            Console.WriteLine($"[OneDriveService] Consultando Graph Shares: {url}");
+            var output = RunCurl(url, "GET", null, token);
+            Console.WriteLine($"[OneDriveService] Graph Response: {output}");
+            
+            using var doc = JsonDocument.Parse(output);
+            if (doc.RootElement.TryGetProperty("id", out var idProp))
+            {
+                var parentRef = doc.RootElement.GetProperty("parentReference");
+                var driveId = parentRef.GetProperty("driveId").GetString() ?? "";
+                
+                return new {
+                    id = idProp.GetString(),
+                    name = doc.RootElement.GetProperty("name").GetString(),
+                    driveId = driveId,
+                    isFolder = doc.RootElement.TryGetProperty("folder", out _)
+                };
+            }
+
+            // 3. Fallback para OneDrive Personal (Consumer) si falla el share
+            // Intentar extraer CID y resid del link expandido sin HttpUtility (para evitar dependencias extra)
+            var uri = new Uri(finalUrl);
+            var query = uri.Query.TrimStart('?');
+            var parts = query.Split('&');
+            var cid = parts.FirstOrDefault(p => p.StartsWith("cid="))?.Split('=')[1];
+            var resid = parts.FirstOrDefault(p => p.StartsWith("resid="))?.Split('=')[1];
+            
+            if (!string.IsNullOrEmpty(cid) && !string.IsNullOrEmpty(resid)) {
+                // Decodificar resid si tiene %21 (que es !)
+                var cleanResid = Uri.UnescapeDataString(resid);
+                Console.WriteLine($"[OneDriveService] Intentando acceso directo a Personal CID: {cid}, ResID: {cleanResid}");
+                
+                // Intentar via Graph primero
+                var directUrl = $"https://graph.microsoft.com/v1.0/drives/{cid}/items/{cleanResid}";
+                var directOutput = RunCurl(directUrl, "GET", null, token);
+                
+                if (directOutput.Contains("Tenant does not have a SPO license") || directOutput.Contains("error")) {
+                    Console.WriteLine("[OneDriveService] Graph falló. Intentando via api.onedrive.com /shares/ (SIN TOKEN)...");
+                    var consumerShareUrl = $"https://api.onedrive.com/v1.0/shares/u!{base64Value.Replace("/", "_").Replace("+", "-").TrimEnd('=')}/driveItem";
+                    directOutput = RunCurl(consumerShareUrl, "GET", null, null);
+                    Console.WriteLine($"[OneDriveService] Consumer Shares (No Token) Response: {directOutput}");
+                }
+
+                using var ddoc = JsonDocument.Parse(directOutput);
+                if (ddoc.RootElement.TryGetProperty("id", out var did)) {
+                    var r = new {
+                        id = did.GetString(),
+                        name = ddoc.RootElement.GetProperty("name").GetString(),
+                        driveId = cid,
+                        isFolder = ddoc.RootElement.TryGetProperty("folder", out _)
+                    };
+                    Console.WriteLine($"[OneDriveService] Link resuelto exitosamente para {r.name} (Drive: {r.driveId})");
+                    return r;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[OneDriveService] Error resolviendo link: {ex.Message}");
+        }
+        return null;
     }
 
     public async Task<List<object>> GetDriveItemsAsync(string driveId, string itemId = "root")
@@ -127,10 +238,26 @@ public class OneDriveService : IOneDriveService
         try
         {
             var url = $"https://graph.microsoft.com/v1.0/drives/{driveId}/items/{itemId}/children";
-            Console.WriteLine($"[OneDriveService] GET {url}");
+            Console.WriteLine($"[OneDriveService] GetDriveItems (Graph): {url}");
             var output = RunCurl(url, "GET", null, token);
-            Console.WriteLine($"[OneDriveService] Items Response Length: {output.Length}");
             
+            if (output.Contains("Tenant does not have a SPO license") || output.Contains("error")) {
+                Console.WriteLine("[OneDriveService] GetItems (Graph) falló. Intentando via api.onedrive.com...");
+                // Intentar via shares si el driveId parece un CID personal (16 hex)
+                if (driveId.Length == 16) {
+                     url = $"https://api.onedrive.com/v1.0/drives/{driveId}/items/{itemId}/children";
+                     output = RunCurl(url, "GET", null, null);
+                }
+                
+                if (output.Contains("error") || output.Length < 100) {
+                     Console.WriteLine("[OneDriveService] Items: Intentando via consumer shares...");
+                     // Si no tenemos el share link original aqui, es mas dificil. 
+                     // Pero si el itemId no es 'root', podemos intentar acceso directo sin token
+                     url = $"https://api.onedrive.com/v1.0/drives/{driveId}/items/{itemId}/children";
+                     output = RunCurl(url, "GET", null, null);
+                }
+            }
+
             using var doc = JsonDocument.Parse(output);
             if (doc.RootElement.TryGetProperty("value", out var valueProp))
             {
@@ -141,13 +268,16 @@ public class OneDriveService : IOneDriveService
                     size = i.GetProperty("size").GetInt64(),
                     lastModified = i.GetProperty("lastModifiedDateTime").GetDateTime()
                 }).ToList();
-                Console.WriteLine($"[OneDriveService] Encontrados {items.Count} items en {itemId}.");
+                Console.WriteLine($"[OneDriveService] Retornando {items.Count} items.");
                 return items;
+            }
+            else {
+                Console.WriteLine($"[OneDriveService] No se encontraron items en la respuesta: {output}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[OneDriveService] Error al obtener items: {ex.Message}");
+            Console.WriteLine($"[OneDriveService] Error al obtener items de {driveId}/{itemId}: {ex.Message}");
         }
         return new List<object>();
     }
@@ -162,9 +292,15 @@ public class OneDriveService : IOneDriveService
 
         try
         {
-            // 1. Obtener archivos de la carpeta (filtramos solo PDFs para simplificar el RAG)
             var url = $"https://graph.microsoft.com/v1.0/drives/{driveId}/items/{folderId}/children?$filter=endsWith(name,'.pdf')";
             var output = RunCurl(url, "GET", null, token);
+
+            if (output.Contains("Tenant does not have a SPO license")) {
+                Console.WriteLine("[OneDriveService] Sync: Graph falló por licencia. Intentando via api.onedrive.com...");
+                // Nota: api.onedrive.com puede no soportar el mismo $filter de OData, probamos sin filtro si falla
+                url = $"https://api.onedrive.com/v1.0/drives/{driveId}/items/{folderId}/children";
+                output = RunCurl(url, "GET", null, null);
+            }
             
             using var doc = JsonDocument.Parse(output);
             if (doc.RootElement.TryGetProperty("value", out var valueProp))
@@ -174,8 +310,11 @@ public class OneDriveService : IOneDriveService
                     var fileId = item.GetProperty("id").GetString();
                     var fileName = item.GetProperty("name").GetString();
                     
+                    // Filtrar PDF manualmente si usamos el consumer API sin $filter
+                    if (!fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) continue;
+
                     try {
-                        // 2. Descargar contenido del archivo usando curl -o temporal
+                        // En personal OneDrive, la URL de descarga tambien cambia si Graph falla
                         var downloadUrl = $"https://graph.microsoft.com/v1.0/drives/{driveId}/items/{fileId}/content";
                         var tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".pdf");
                         
@@ -183,13 +322,18 @@ public class OneDriveService : IOneDriveService
                         var psi = new ProcessStartInfo("curl", downloadArgs) { CreateNoWindow = true, UseShellExecute = false };
                         using (var p = Process.Start(psi)) { p?.WaitForExit(20000); }
 
-                        if (File.Exists(tempFile))
+                        // Si la descarga de Graph falló (archivo vacío o error en el contenido), intentar con Consumer API (SIN TOKEN)
+                        if (!File.Exists(tempFile) || new FileInfo(tempFile).Length < 100) {
+                             downloadUrl = $"https://api.onedrive.com/v1.0/drives/{driveId}/items/{fileId}/content";
+                             downloadArgs = $"-s -L -X GET \"{downloadUrl}\" -o \"{tempFile}\""; // Sin Authorization header
+                             using (var p = Process.Start(new ProcessStartInfo("curl", downloadArgs) { CreateNoWindow = true, UseShellExecute = false })) { p?.WaitForExit(20000); }
+                        }
+
+                        if (File.Exists(tempFile) && new FileInfo(tempFile).Length > 0)
                         {
-                            // 3. Procesar con el IngestionService
                             using var stream = File.OpenRead(tempFile);
                             await _ingestionService.ProcessAndIndexDocumentAsync(stream, fileName);
                             count++;
-                            
                             stream.Close();
                             File.Delete(tempFile);
                         }
