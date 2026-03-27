@@ -142,10 +142,9 @@ Este sistema representa el estado del arte en **Sistemas RAG Gobernados**, demos
 
 ### 🎬 Demo en Video
 
-<!-- Reemplaza VIDEO_ID con el ID del video de YouTube (ej: dQw4w9WgXcQ) -->
 <div align="center">
-  <a href="https://www.youtube.com/watch?v=VIDEO_ID" target="_blank">
-    <img src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" alt="Ver Demo RAGulator en YouTube" width="70%"/>
+  <a href="https://www.youtube.com/watch?v=0xex5qgugE4" target="_blank">
+    <img src="https://img.youtube.com/vi/0xex5qgugE4/maxresdefault.jpg" alt="Ver Demo RAGulator en YouTube" width="70%"/>
   </a>
   <p><em>▶️ Haz clic para ver la demo completa en YouTube</em></p>
 </div>
