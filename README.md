@@ -27,11 +27,8 @@ Advanced, governed, and traceable RAG (Retrieval-Augmented Generation) system fo
 ## 🎬 Demo
 
 <div align="center">
-  <a href="https://github.com/RAGulatorAPP/RAGulator/raw/main/slides/intro%20RaG_video.mp4">
-    <img src="assets/intro%20RaG.gif" alt="▶ Click to watch the demo video" width="90%"/>
-  </a>
-  <p><em>▶ Click the preview to watch the full demo video</em></p>
-  <br/>
+  <video src="https://github.com/user-attachments/assets/1b80a0dd-ed80-402e-b4f7-7f62baa08f6b" controls width="90%"></video>
+  <br/><br/>
   <a href="https://github.com/RAGulatorAPP/RAGulator/raw/main/slides/intro%20RaG.pptx">
     <img src="https://img.shields.io/badge/📥%20Download%20Presentation-PowerPoint-B7472A?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white" alt="Download Presentation"/>
   </a>
