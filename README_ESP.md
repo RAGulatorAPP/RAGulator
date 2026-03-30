@@ -27,12 +27,13 @@ Sistema RAG (Retrieval-Augmented Generation) avanzado, gobernado y trazable para
 ## 🎬 Demo
 
 <div align="center">
-  <video src="slides/intro%20RaG_video.mp4" controls width="90%">
-    Tu navegador no soporta la etiqueta de video.
-  </video>
-  <br/><br/>
-  <a href="slides/intro%20RaG.pptx">
-    <img src="https://img.shields.io/badge/📥%20Descargar%20Presentación-PowerPoint-B7472A?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white" alt="Descargar Presentación"/>
+  <a href="https://github.com/RAGulatorAPP/RAGulator/raw/main/slides/intro%20RaG_video.mp4">
+    <img src="assets/intro%20RaG.gif" alt="▶ Clic para ver el video demo" width="90%"/>
+  </a>
+  <p><em>▶ Haz clic en la preview para ver el video completo</em></p>
+  <br/>
+  <a href="https://github.com/RAGulatorAPP/RAGulator/raw/main/slides/intro%20RaG.pptx">
+    <img src="https://img.shields.io/badge/📥%20Descargar%20Presentaci%C3%B3n-PowerPoint-B7472A?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white" alt="Descargar Presentación"/>
   </a>
 </div>
 
