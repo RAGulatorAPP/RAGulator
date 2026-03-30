@@ -14,6 +14,12 @@
 
 > **"Transforma la incertidumbre en confianza absoluta."**
 
+<div align="center">
+
+[![📊 Ver Presentación](https://img.shields.io/badge/📊%20Ver%20Presentación-Canva-7B2FBE?style=for-the-badge&logo=canva&logoColor=white)](https://www.canva.com/design/DAHEz-_Hs1w/PWPA4SuTZQ6rfiLwMgRRNQ/view)
+
+</div>
+
 Sistema RAG (Retrieval-Augmented Generation) avanzado, gobernado y trazable para comercio internacional. RAGulator es una solución **100% funcional** que unifica el ecosistema de **puntos de inteligencia de Azure** para ofrecer respuestas fundamentadas con citas bibliográficas inmutables.
 
 ---
