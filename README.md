@@ -24,6 +24,20 @@ Advanced, governed, and traceable RAG (Retrieval-Augmented Generation) system fo
 
 ---
 
+## 🎬 Demo
+
+<div align="center">
+  <video src="slides/intro%20RaG_video.mp4" controls width="90%">
+    Your browser does not support the video tag.
+  </video>
+  <br/><br/>
+  <a href="slides/intro%20RaG.pptx">
+    <img src="https://img.shields.io/badge/📥%20Download%20Presentation-PowerPoint-B7472A?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white" alt="Download Presentation"/>
+  </a>
+</div>
+
+---
+
 ## <img src="assets/Icono_62_x_64.png" width="22" height="22" style="vertical-align:middle"/> 🏗️ AI Governance Architecture
 
 RAGulator is not just a chat; it is a distributed orchestration of more than 13 Azure services working in harmony:
